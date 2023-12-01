@@ -23,6 +23,13 @@ add_subdirectory(test)
 # per-day executables go here
 #############################
 
+add_executable(day_1
+        day_1.cc
+        )
+target_link_libraries(day_1
+        utils
+        )
+
 #add_executable(day_xx
 #        day_xx.cc
 #        )
