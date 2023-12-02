@@ -1,12 +1,14 @@
+// -*- mode: c++ -*-
+
 namespace check {
 
 template <typename T>
-bool check(const string& name, const T& expected, const T& actual) {
-  cout << name << ":" << endl;
-  cout << "'" << actual << "'" << endl;
+bool check(const std::string& name, const T& expected, const T& actual) {
+  std::cout << name << ":" << std::endl;
+  std::cout << "'" << actual << "'" << std::endl;
   if (expected == actual) return true;
-  cerr << name << " FAILED, expected" << endl;
-  cerr << "'" << actual << "'" << endl;
+  std::cerr << name << " FAILED, expected" << std::endl;
+  std::cerr << "'" << actual << "'" << std::endl;
   return false;
 }
 
