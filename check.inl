@@ -8,8 +8,8 @@ bool check(const std::string& name, const T& expected, const T& actual) {
   std::cout << "'" << actual << "'" << std::endl;
   if (expected == actual) return true;
   std::cerr << name << " FAILED, expected" << std::endl;
-  std::cerr << "'" << actual << "'" << std::endl;
+  std::cerr << "'" << expected << "'" << std::endl;
   return false;
 }
 
-}
+}  // namespace check
