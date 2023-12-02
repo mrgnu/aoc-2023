@@ -126,6 +126,36 @@ result_t part_1(const lines_t& lines) {
   return accumulate(game_ids.begin(), game_ids.end(), 0);
 }
 
-result_t part_2(const lines_t& lines) {}
+draw_t::count_map_t min_count_map(const game_t& game) {
+  auto draw_it = game.draws_.cbegin();
+  draw_t::count_map_t min_cube_count = draw_it->count_map_;
+  ++draw_it;
+  for (; draw_it != game.draws_.cend(); ++draw_it) {
+    const auto& draw = *draw_it;
+    for (const auto count_pair : draw.count_map_) {
+      const auto& c = count_pair.first;
+      const auto& n = count_pair.second;
+      const draw_t::count_t old_min =
+          get_or<draw_t::color_t, draw_t::count_t>(min_cube_count, c, 0);
+      min_cube_count[c] = max(old_min, n);
+    }
+  }
+  return min_cube_count;
+}
+
+result_t cube_power(const draw_t::count_map_t& min_count) {
+  auto counts = min_count |
+                views::transform([](const auto& p) { return p.second; }) |
+                views::common;
+  return accumulate(counts.begin(), counts.end(), 1, multiplies<result_t>());
+}
+
+result_t part_2(const lines_t& lines) {
+  auto powers = lines | views::transform(game_t::parse) |
+                views::transform(min_count_map) | views::transform(cube_power) |
+                views::common;
+  const result_t sum = accumulate(powers.begin(), powers.end(), 0);
+  return sum;
+}
 
 }  // namespace day_2
