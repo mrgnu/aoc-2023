@@ -16,4 +16,15 @@ lines_t read_lines(const std::filesystem::path& path) {
   }
   return lines;
 }
+
+parts_t split_string(const std::string& s, const std::regex& p) {
+  std::sregex_token_iterator it(s.cbegin(), s.cend(), p, -1);
+  std::sregex_token_iterator end;
+  parts_t parts;
+  for (; it != end; ++it) {
+    parts.push_back(*it);
+  }
+  return parts;
+}
+
 }  // namespace utils
