@@ -30,6 +30,14 @@ target_link_libraries(day_1
         utils
         )
 
+add_executable(day_2
+        day_2.cc
+        day_2_exe.cc
+        )
+target_link_libraries(day_2
+        utils
+        )
+
 #add_executable(day_xx
 #        day_xx.cc
 #        )
