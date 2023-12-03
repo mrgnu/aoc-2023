@@ -19,7 +19,7 @@ bool operator==(const game_t& a, const game_t& b) {
 
 }  // namespace day_2
 
-TEST_CASE("game::parse", "[game]") {
+TEST_CASE("game::parse", "[day 2][game]") {
   const line_t game_str =
       "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
 
@@ -37,4 +37,14 @@ TEST_CASE("game::parse", "[game]") {
   };
 
   REQUIRE(expected == game_t::parse(game_str));
+}
+
+TEST_CASE("part 1", "[day 2][part 1]") {
+  REQUIRE(part_1(example_lines) == 8L);
+  REQUIRE(part_1(read_lines("res/day_2_part_1.txt")) == 2076L);
+}
+
+TEST_CASE("part 2", "[day 2][part 2]") {
+  REQUIRE(part_2(example_lines) == 2286L);
+  REQUIRE(part_2(read_lines("res/day_2_part_1.txt")) == 70950L);
 }

@@ -12,7 +12,8 @@ using lines_t = std::vector<line_t>;
 
 lines_t read_lines(const std::filesystem::path& path);
 
-using parts_t = std::vector<std::string>;
+using part_t = std::string;
+using parts_t = std::vector<part_t>;
 
 parts_t split_string(const std::string& s, const std::regex& p);
 

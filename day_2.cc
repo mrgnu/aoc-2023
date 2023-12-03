@@ -14,9 +14,46 @@ using namespace utils;
 namespace {
 const regex draw_re("([[:digit:]]+)[[:blank:]]+([[:alpha:]]+)",
                     regex::extended);
+
+using namespace day_2;
+
+pair<draw_t::color_t, draw_t::count_t> parse_color(const part_t& color_str) {
+  smatch res;
+  if (!regex_match(color_str, res, draw_re)) {
+    throw runtime_error(format("failed to parse color '{}'", color_str));
+  }
+  const draw_t::count_t n = stoi(res[1]);
+  const draw_t::color_t c = draw_t::s_color_map_.at(res[2]);
+  return {c, n};
+}
+
+draw_t parse_draw(const string& draw_str) {
+  const parts_t colors = utils::split_string(draw_str, regex(",[[:blank:]]+"));
+  auto pairs = colors | views::transform(parse_color) | views::common;
+  draw_t draw;
+  draw.count_map_.insert(pairs.begin(), pairs.end());
+  return draw;
+}
+
+game_t::draws_t parse_draws(const string& draws_str) {
+  const parts_t draw_strs =
+      utils::split_string(draws_str, regex(";[[:blank:]]+"));
+  auto view = draw_strs | views::transform(parse_draw) | views::common;
+  game_t::draws_t draws;
+  copy(view.begin(), view.end(), back_inserter(draws));
+  return draws;
+}
+
 }  // namespace
 
 namespace day_2 {
+
+// static
+const map<string, draw_t::color_t> draw_t::s_color_map_{
+    {"red", RED},
+    {"green", GREEN},
+    {"blue", BLUE},
+};
 
 // static
 game_t game_t::parse(const line_t& line) {
@@ -30,35 +67,11 @@ game_t game_t::parse(const line_t& line) {
   if (!regex_match(game_str, g, regex("Game ([[:digit:]]+)"))) {
     throw runtime_error(format("failed to parse game '{}'", game_str));
   }
+
   const game_id_t game_id = stoi(g[1]);
+
   const string& draws_str = game_draws[1];
-
-  draws_t draws;
-
-  const parts_t game_draw_strs =
-      utils::split_string(game_draws[1], regex(";[[:blank:]]+"));
-
-  for (const auto& game_draw : game_draw_strs) {
-    const parts_t colors =
-        utils::split_string(game_draw, regex(",[[:blank:]]+"));
-
-    draw_t draw;
-    for (const auto& color : colors) {
-      smatch res;
-      if (!regex_match(color, res, draw_re)) {
-        throw runtime_error(format("failed to parse draw '{}'", game_draw));
-      }
-      const draw_t::count_t n = stoi(res[1]);
-      const string color_str = res[2];
-      const draw_t::color_t c = draw_t::s_color_map_.at(color_str);
-
-      draw.count_map_[c] = n;
-    }
-
-    draws.push_back({
-        draw,
-    });
-  }
+  const draws_t draws = ::parse_draws(draws_str);
 
   return {
       game_id,
@@ -66,36 +79,15 @@ game_t game_t::parse(const line_t& line) {
   };
 }
 
-// static
-const map<string, draw_t::color_t> draw_t::s_color_map_{
-    {
-        "red",
-        RED,
-    },
-    {
-        "green",
-        GREEN,
-    },
-    {
-        "blue",
-        BLUE,
-    },
-};
-
-// TODO: move to utils
-template <typename K, typename T>
-constexpr inline T get_or(const map<K, T>& m, const K& k, const T fallback) {
-  const auto it = m.find(k);
-  return it == m.cend() ? fallback : it->second;
-}
+#include "get_or.inl"
 
 bool possible(const draw_t::count_map_t& bag_state, const game_t& game) {
   for (const auto& draw : game.draws_) {
     for (const auto& p : bag_state) {
       const auto& color = p.first;
       const auto& bag_count = p.second;
-      const auto& draw_count =
-          get_or<draw_t::color_t, draw_t::count_t>(draw.count_map_, color, 0);
+      const auto& draw_count = utils::get_or<draw_t::color_t, draw_t::count_t>(
+          draw.count_map_, color, 0);
       if (bag_count < draw_count) return false;
     }
   }
@@ -136,7 +128,7 @@ draw_t::count_map_t min_count_map(const game_t& game) {
       const auto& c = count_pair.first;
       const auto& n = count_pair.second;
       const draw_t::count_t old_min =
-          get_or<draw_t::color_t, draw_t::count_t>(min_cube_count, c, 0);
+          utils::get_or<draw_t::color_t, draw_t::count_t>(min_cube_count, c, 0);
       min_cube_count[c] = max(old_min, n);
     }
   }
