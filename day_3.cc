@@ -48,13 +48,17 @@ row_t parse_row(const line_t& line) {
   return row;
 }
 
+bool is_part(const val_t& val) { return holds_alternative<day_3::part_t>(val); }
+
 bool is_part(const schematic_t& schematic, const coord_t& coord) {
   const auto it = schematic.find(coord);
   if (it == schematic.cend()) return false;
   const val_t& v = it->second;
+  return is_part(v);
+}
 
-  // NOTE: get_if to avoid ambiguous type
-  return get_if<1>(&v);
+bool is_part_num(const val_t& val) {
+  return holds_alternative<part_num_t>(val);
 }
 
 bool is_part_num(const schematic_t& schematic, const coord_t& coord) {
@@ -107,6 +111,40 @@ bool is_assigned_part_num(const schematic_t& schematic, const coord_t& coord) {
   return false;
 }
 
+// coord_t points to leftmost coord of part
+using wide_part_num_t = pair<part_num_t, coord_t>;
+using wide_val_t = std::variant<wide_part_num_t, day_3::part_t>;
+using wide_schematic_t = std::map<coord_t, wide_val_t>;
+
+bool is_part_num(const wide_val_t& val) {
+  return holds_alternative<wide_part_num_t>(val);
+}
+
+bool is_part(const wide_val_t& val) {
+  return holds_alternative<day_3::part_t>(val);
+}
+
+wide_schematic_t get_wide_shematic(const schematic_t& in) {
+  wide_schematic_t out;
+  for (const auto& p : in) {
+    const coord_t& c = p.first;
+    const val_t& v = p.second;
+    if (holds_alternative<part_num_t>(v)) {
+      const part_num_t& n = get<part_num_t>(v);
+      const coords_t part_num_coords = get_part_num_coords(n, c);
+      for (const coord_t& part_num_coord : part_num_coords) {
+        const wide_part_num_t w{n, c};
+        out[part_num_coord] = w;
+        // out.emplace(part_num_coord, w);
+      }
+    } else {
+      const day_3::part_t& part = get<1>(v);
+      out.emplace(c, part);
+    }
+  }
+  return out;
+}
+
 }  // namespace
 
 namespace day_3 {
@@ -141,10 +179,73 @@ part_nums_t part_nums(const schematic_t& schematic) {
   return parts;
 }
 
+// FIXME move to anonymous
+optional<result_t> gear_ratio(const wide_schematic_t& schematic,
+                              const wide_schematic_t::value_type& p) {
+  const wide_val_t& val = p.second;
+  if (!is_part(val)) return {};
+
+  const part_t part = get<1>(val);
+  if (part != '*') return {};
+
+  auto filter_part_num = [&schematic](const coord_t& c) {
+    const auto it = schematic.find(c);
+    return it != schematic.cend() && is_part_num(it->second);
+  };
+  auto to_part_num = [&schematic](const coord_t& c) {
+    return get<wide_part_num_t>(schematic.at(c));
+  };
+
+  const auto adj = get_adjacent(p.first);
+  auto adjacent_part_num_source_coords =
+      adj | views::filter(filter_part_num) | views::transform(to_part_num) |
+      // get source coord
+      views::transform([](const wide_part_num_t& n) { return n.second; }) |
+      views::common;
+
+  // adjacent_part_num_source_coords may now contain dups. put source coords in
+  // set to get rid of them. NOTE: can't use set on part numbers, in case same
+  // part number occurs twice around gear.
+  set<coord_t> source_coords;
+  copy(adjacent_part_num_source_coords.begin(),
+       adjacent_part_num_source_coords.end(),
+       inserter(source_coords, source_coords.begin()));
+
+  if (source_coords.size() != 2) return {};
+
+  result_t acc = 1;
+  for (const coord_t& source_coord : source_coords) {
+    const wide_val_t& v = schematic.at(source_coord);
+    const part_num_t n = get<wide_part_num_t>(v).first;
+    acc *= n;
+  }
+
+  return acc;
+}
+
+vector<result_t> gear_ratios(const wide_schematic_t& schematic) {
+  auto ratio_transform = bind(gear_ratio, schematic, placeholders::_1);
+  auto rs =
+      schematic | views::transform(ratio_transform) |
+      views::filter([](const optional<result_t>& r) { return r.has_value(); }) |
+      views::transform([](const optional<result_t>& r) { return r.value(); }) |
+      views::common;
+  vector<result_t> ratios;
+  copy(rs.begin(), rs.end(), back_inserter(ratios));
+  return ratios;
+}
+
 result_t part_1(const lines_t& lines) {
   const schematic_t s = parse_schematic(lines);
   const part_nums_t p = part_nums(s);
   const result_t r = accumulate(p.cbegin(), p.cend(), 0);
+  return r;
+}
+
+result_t part_2(const lines_t& lines) {
+  const wide_schematic_t s = get_wide_shematic(parse_schematic(lines));
+  const vector<result_t> ratios = gear_ratios(s);
+  const result_t r = accumulate(ratios.cbegin(), ratios.cend(), 0);
   return r;
 }
 

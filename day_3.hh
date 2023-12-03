@@ -43,6 +43,7 @@ using schematic_t = std::map<coord_t, val_t>;
 schematic_t parse_schematic(const utils::lines_t& lines);
 
 part_nums_t part_nums(const schematic_t& schematic);
+std::vector<result_t> gear_ratios(const schematic_t& schematic);
 
 result_t part_1(const utils::lines_t& lines);
 result_t part_2(const utils::lines_t& lines);

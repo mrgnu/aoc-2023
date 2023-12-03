@@ -37,8 +37,17 @@ TEST_CASE("example 1", "[day 3][part 1]") {
   REQUIRE(part_1(example_lines) == 4361);
 }
 
+TEST_CASE("gear_ratios", "[day 3]") {
+  REQUIRE(part_2(example_lines) == 467835L);
+}
+
 TEST_CASE("part 1", "[day 3][part 1]") {
   const lines_t lines = read_lines("res/day_3_part_1.txt");
   REQUIRE(part_1(lines) > 326919);  // first guess
   REQUIRE(part_1(lines) == 521515);
+}
+
+TEST_CASE("part 2", "[day 3][part 2]") {
+  const lines_t lines = read_lines("res/day_3_part_1.txt");
+  REQUIRE(part_2(lines) == 69527306);
 }
