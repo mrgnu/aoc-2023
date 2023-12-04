@@ -46,6 +46,15 @@ card_t read_line(const line_t& line) {
   return {card_id, nums, wins};
 }
 
+result_t winning_number_count(const card_t& card) {
+  const numbers_t& nums = get<CARD_NUMS>(card);
+  const numbers_t& wins = get<WIN_NUMS>(card);
+  numbers_t common;
+  set_intersection(nums.cbegin(), nums.cend(), wins.cbegin(), wins.cend(),
+                   inserter(common, common.begin()));
+  return common.size();
+}
+
 }  // namespace
 
 namespace day_4 {
@@ -63,26 +72,15 @@ cards_t read_cards(const lines_t& lines) {
 
 result_t part_1(const utils::lines_t& lines) {
   const cards_t cards = read_cards(lines);
-  auto range =
-      cards | views::transform([](const cards_t::value_type& p) -> card_t {
-        return p.second;
-      }) |
-      // get common digits - aka set intersection
-      views::transform([](const card_t& card) -> numbers_t {
-        const numbers_t& nums = get<CARD_NUMS>(card);
-        const numbers_t& wins = get<WIN_NUMS>(card);
-        numbers_t common;
-        set_intersection(nums.cbegin(), nums.cend(), wins.cbegin(), wins.cend(),
-                         inserter(common, common.begin()));
-        return common;
-      }) |
-      // get number of common digits
-      views::transform(
-          [](const numbers_t& common) -> result_t { return common.size(); }) |
-      // get points for number of common digits - aka 2^(count - 1)
-      views::transform([](const result_t& n) -> result_t {
-        return pow(2, static_cast<long>(n) - 1);
-      });
+  auto range = cards |
+               views::transform([](const cards_t::value_type& p) -> card_t {
+                 return p.second;
+               }) |
+               views::transform(winning_number_count) |
+               // get points for number of common digits - aka 2^(count - 1)
+               views::transform([](const result_t& n) -> result_t {
+                 return pow(2, static_cast<long>(n) - 1);
+               });
   const result_t points = accumulate(range.begin(), range.end(), 0);
   return points;
 }
