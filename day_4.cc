@@ -55,6 +55,34 @@ result_t winning_number_count(const card_t& card) {
   return common.size();
 }
 
+using card_count_t = result_t;
+using card_count_map_t = map<card_id_t, card_count_t>;
+
+card_count_map_t get_final_card_counts(const cards_t& cards) {
+  // NOTE: map is sorted
+  auto card_id_range = cards | views::keys;
+
+  card_count_map_t card_counts;
+
+  // init card counts
+  for (const card_id_t& card_id : card_id_range) {
+    card_counts[card_id] = 1;
+  }
+
+  // update card counts
+  for (const card_id_t& card_id : card_id_range) {
+    const result_t win_count = winning_number_count(cards.at(card_id));
+
+    const card_count_t card_count = card_counts.at(card_id);
+    for (card_id_t win_id = card_id + 1; win_id <= card_id + win_count;
+         ++win_id) {
+      card_counts[win_id] += card_count;
+    }
+  }
+
+  return card_counts;
+}
+
 }  // namespace
 
 namespace day_4 {
@@ -83,6 +111,14 @@ result_t part_1(const utils::lines_t& lines) {
                });
   const result_t points = accumulate(range.begin(), range.end(), 0);
   return points;
+}
+
+result_t part_2(const utils::lines_t& lines) {
+  const cards_t cards = read_cards(lines);
+  const card_count_map_t card_counts = get_final_card_counts(cards);
+  auto counts = card_counts | views::values;
+  const result_t count = accumulate(counts.begin(), counts.end(), 0);
+  return count;
 }
 
 }  // namespace day_4

@@ -29,3 +29,10 @@ TEST_CASE("part 1", "[day 4]") {
   const lines_t lines = utils::read_lines("res/day_4_part_1.txt");
   REQUIRE(part_1(lines) == 21959);
 }
+
+TEST_CASE("example 2", "[day 4]") { REQUIRE(part_2(example_input) == 30); }
+
+TEST_CASE("part 2", "[day 4]") {
+  const lines_t lines = utils::read_lines("res/day_4_part_1.txt");
+  REQUIRE(part_2(lines) == 5132675);
+}
