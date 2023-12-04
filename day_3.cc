@@ -2,9 +2,18 @@
 
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include <numeric>
 #include <ranges>
 #include <sstream>
+
+namespace std {
+template <typename A, typename B>
+ostream& operator<<(ostream& o, const std::pair<A, B>& p) {
+  o << "[" << p.first << "; " << p.second << "]";
+  return o;
+}
+}  // namespace std
 
 using namespace std;
 using namespace utils;
@@ -12,22 +21,20 @@ using namespace utils;
 namespace {
 
 using namespace day_3;
+using day_3::part_t;
 
-using row_val_t = pair<dim_t, val_t>;
-using row_t = vector<row_val_t>;
-
-part_num_t get_num(line_t::const_iterator& it,
-                   const line_t::const_iterator end) {
+result_t get_num(line_t::const_iterator& it, const line_t::const_iterator end) {
   const auto start = it;
   while (it != end && isdigit(*it)) ++it;
   const line_t num_str(start, it);
   return stoi(num_str);
 }
 
-row_t parse_row(const line_t& line) {
-  row_t row;
+vector<schematic_t::value_type> parse_row(const line_t& line, const dim_t y) {
+  vector<schematic_t::value_type> tiles;
+
   for (auto it = line.cbegin(); it != line.cend();) {
-    const dim_t idx = distance(line.cbegin(), it);
+    const coord_t c = {distance(line.cbegin(), it), y};
 
     if (*it == '.') {
       ++it;
@@ -35,39 +42,63 @@ row_t parse_row(const line_t& line) {
     }
 
     if (isdigit(*it)) {
-      const part_num_t n = get_num(it, line.cend());
-      // NOTE: adding part number for leftmost x-coord it ocupies
-      row.emplace_back(idx, n);
+      // NOTE: part numbers are added for each tile they cover.
+      // part_num_t::second is the coord of the leftmost tile of the part
+      // number.
+      const result_t n = get_num(it, line.cend());
+      const dim_t end_x = distance(line.cbegin(), it);
+      for (dim_t x = c.first; x < end_x; ++x) {
+        const part_num_t num{n, c};
+        const coord_t t{x, y};
+        const val_t v(num);
+        tiles.push_back({t, v});
+      }
+
       continue;
     }
 
-    row.emplace_back(idx, *it);
+    tiles.push_back({c, *it});
     ++it;
   }
 
-  return row;
+  return tiles;
 }
 
-bool is_part(const val_t& val) { return holds_alternative<day_3::part_t>(val); }
-
-bool is_part(const schematic_t& schematic, const coord_t& coord) {
-  const auto it = schematic.find(coord);
-  if (it == schematic.cend()) return false;
-  const val_t& v = it->second;
-  return is_part(v);
+template <typename T>
+auto coords_with_type(const schematic_t& schematic) {
+  return schematic | views::filter([](const schematic_t::value_type& p) {
+           return holds_alternative<T>(p.second);
+         }) |
+         views::transform([](const schematic_t::value_type& p) -> coord_t {
+           return p.first;
+         });
 }
 
-bool is_part_num(const val_t& val) {
-  return holds_alternative<part_num_t>(val);
+template <typename T>
+auto coords_with_type(const schematic_t& schematic, auto& coords) {
+  return coords | views::filter([&schematic](const coord_t& c) -> bool {
+           const auto it = schematic.find(c);
+           if (it == schematic.cend()) return false;
+           return holds_alternative<T>(it->second);
+         });
 }
 
-bool is_part_num(const schematic_t& schematic, const coord_t& coord) {
-  const auto it = schematic.find(coord);
-  if (it == schematic.cend()) return false;
-  const val_t& v = it->second;
+template <typename T>
+T to_type(const schematic_t& schematic, const coord_t& coord) {
+  try {
+    return get<T>(schematic.at(coord));
+  } catch (const exception& e) {
+    cerr << "failed to get " << coord << " with specific type" << endl;
+    throw e;
+  }
+}
 
-  // NOTE: get_if to avoid ambiguous type
-  return get_if<0>(&v);
+template <typename T>
+auto range_with_type(const schematic_t& schematic, auto& coord_range) {
+  auto type_bind = bind(to_type<T>, ref(schematic), placeholders::_1);
+  return coord_range | views::transform([&schematic](const coord_t& c) {
+           return to_type<T>(schematic, c);
+         });
 }
 
 coords_t get_adjacent(const coord_t& coord) {
@@ -82,67 +113,48 @@ coords_t get_adjacent(const coord_t& coord) {
   };
 }
 
-coords_t get_part_num_coords(const part_num_t& num,
-                             const coord_t& start_coord) {
-  const auto& y = start_coord.second;
-  const line_t::size_type n = to_string(num).length();
+coords_t adjacent_part_num_coords(const schematic_t& schematic,
+                                  const coord_t& coord) {
+  const coords_t adj = get_adjacent(coord);
+  // keep coords of adjacent part numbers - this may contain more than
+  // one coord for the same part number
+  auto part_num_coords = coords_with_type<part_num_t>(schematic, adj);
+
+  // collect start coords of part numbers
+  auto part_num_range = range_with_type<part_num_t>(schematic, part_num_coords);
   coords_t coords;
-  for (auto x = start_coord.first; x < start_coord.first + n; ++x) {
-    coords.emplace(x, y);
+  for (const part_num_t& part_num : part_num_range) {
+    const coord_t& start = part_num.second;
+    coords.insert(start);
   }
+
   return coords;
 }
 
-bool is_assigned_part_num(const schematic_t& schematic, const coord_t& coord) {
-  const auto it = schematic.find(coord);
-  if (it == schematic.cend()) return false;
-  const val_t& v = it->second;
-  if (!holds_alternative<part_num_t>(v)) return false;
+vector<result_t> gear_ratios(const schematic_t& schematic) {
+  // range with coords for all '*' parts
+  auto gear_type_coord_range =
+      coords_with_type<part_t>(schematic) |
+      views::filter([&schematic](const coord_t& coord) {
+        const part_t part = to_type<part_t>(schematic, coord);
+        return part == '*';
+      });
 
-  const part_num_t& num = get<part_num_t>(v);
-  const coords_t part_num_coords = get_part_num_coords(num, coord);
-  for (const auto& part_num_coord : part_num_coords) {
-    const coords_t adjacent = get_adjacent(part_num_coord);
-    for (const coord_t& a : adjacent) {
-      if (is_part(schematic, a)) return true;
-    }
+  vector<result_t> ratios;
+  for (const coord_t& coord : gear_type_coord_range) {
+    const coords_t adjacent = adjacent_part_num_coords(schematic, coord);
+    // must have exactly two adjacent numbers
+    if (adjacent.size() != 2) continue;
+
+    auto nums = range_with_type<part_num_t>(schematic, adjacent) |
+                views::transform([](const part_num_t& part) -> result_t {
+                  return part.first;
+                });
+    const result_t ratio =
+        accumulate(nums.begin(), nums.end(), 1L, std::multiplies<result_t>());
+    ratios.push_back(ratio);
   }
-
-  return false;
-}
-
-// coord_t points to leftmost coord of part
-using wide_part_num_t = pair<part_num_t, coord_t>;
-using wide_val_t = std::variant<wide_part_num_t, day_3::part_t>;
-using wide_schematic_t = std::map<coord_t, wide_val_t>;
-
-bool is_part_num(const wide_val_t& val) {
-  return holds_alternative<wide_part_num_t>(val);
-}
-
-bool is_part(const wide_val_t& val) {
-  return holds_alternative<day_3::part_t>(val);
-}
-
-wide_schematic_t get_wide_shematic(const schematic_t& in) {
-  wide_schematic_t out;
-  for (const auto& p : in) {
-    const coord_t& c = p.first;
-    const val_t& v = p.second;
-    if (holds_alternative<part_num_t>(v)) {
-      const part_num_t& n = get<part_num_t>(v);
-      const coords_t part_num_coords = get_part_num_coords(n, c);
-      for (const coord_t& part_num_coord : part_num_coords) {
-        const wide_part_num_t w{n, c};
-        out[part_num_coord] = w;
-        // out.emplace(part_num_coord, w);
-      }
-    } else {
-      const day_3::part_t& part = get<1>(v);
-      out.emplace(c, part);
-    }
-  }
-  return out;
+  return ratios;
 }
 
 }  // namespace
@@ -153,97 +165,42 @@ schematic_t parse_schematic(const lines_t& lines) {
   schematic_t schematic;
   for (lines_t::size_type y = 0; y < lines.size(); ++y) {
     const line_t& line = lines[y];
-    const row_t row = parse_row(line);
-    for (const auto& p : row) {
-      const auto& x = p.first;
-      const auto& v = p.second;
-      const coord_t c{x, y};
-      schematic[c] = v;
-    }
+    const vector<schematic_t::value_type> row = parse_row(line, y);
+    schematic.insert(row.cbegin(), row.cend());
   }
   return schematic;
 }
 
 part_nums_t part_nums(const schematic_t& schematic) {
-  auto filter = [&schematic](const schematic_t::value_type& v) {
-    return is_assigned_part_num(schematic, v.first);
-  };
-  auto get_part_num = [](const val_t& v) { return get<part_num_t>(v); };
+  auto part_coords = coords_with_type<part_t>(schematic);
 
-  auto v = schematic | views::filter(filter) |
-           views::transform(&schematic_t::value_type::second) |
-           views::transform(get_part_num) | views::common;
+  // collect start position of all adjacent part numbers
+  set<coord_t> valid_part_num_coords;
 
-  part_nums_t parts;
-  std::copy(v.begin(), v.end(), inserter(parts, parts.begin()));
-  return parts;
-}
-
-// FIXME move to anonymous
-optional<result_t> gear_ratio(const wide_schematic_t& schematic,
-                              const wide_schematic_t::value_type& p) {
-  const wide_val_t& val = p.second;
-  if (!is_part(val)) return {};
-
-  const part_t part = get<1>(val);
-  if (part != '*') return {};
-
-  auto filter_part_num = [&schematic](const coord_t& c) {
-    const auto it = schematic.find(c);
-    return it != schematic.cend() && is_part_num(it->second);
-  };
-  auto to_part_num = [&schematic](const coord_t& c) {
-    return get<wide_part_num_t>(schematic.at(c));
-  };
-
-  const auto adj = get_adjacent(p.first);
-  auto adjacent_part_num_source_coords =
-      adj | views::filter(filter_part_num) | views::transform(to_part_num) |
-      // get source coord
-      views::transform([](const wide_part_num_t& n) { return n.second; }) |
-      views::common;
-
-  // adjacent_part_num_source_coords may now contain dups. put source coords in
-  // set to get rid of them. NOTE: can't use set on part numbers, in case same
-  // part number occurs twice around gear.
-  set<coord_t> source_coords;
-  copy(adjacent_part_num_source_coords.begin(),
-       adjacent_part_num_source_coords.end(),
-       inserter(source_coords, source_coords.begin()));
-
-  if (source_coords.size() != 2) return {};
-
-  result_t acc = 1;
-  for (const coord_t& source_coord : source_coords) {
-    const wide_val_t& v = schematic.at(source_coord);
-    const part_num_t n = get<wide_part_num_t>(v).first;
-    acc *= n;
+  for (const coord_t& part_coord : part_coords) {
+    const coords_t adjacent = adjacent_part_num_coords(schematic, part_coord);
+    valid_part_num_coords.insert(adjacent.cbegin(), adjacent.cend());
   }
 
-  return acc;
-}
-
-vector<result_t> gear_ratios(const wide_schematic_t& schematic) {
-  auto ratio_transform = bind(gear_ratio, schematic, placeholders::_1);
-  auto rs =
-      schematic | views::transform(ratio_transform) |
-      views::filter([](const optional<result_t>& r) { return r.has_value(); }) |
-      views::transform([](const optional<result_t>& r) { return r.value(); }) |
-      views::common;
-  vector<result_t> ratios;
-  copy(rs.begin(), rs.end(), back_inserter(ratios));
-  return ratios;
+  // fetch and return.
+  part_nums_t nums;
+  for (const coord_t& coord : valid_part_num_coords) {
+    nums.push_back(to_type<part_num_t>(schematic, coord));
+  }
+  return nums;
 }
 
 result_t part_1(const lines_t& lines) {
   const schematic_t s = parse_schematic(lines);
   const part_nums_t p = part_nums(s);
-  const result_t r = accumulate(p.cbegin(), p.cend(), 0);
+  auto nums = p | views::transform(
+                      [](const part_num_t& p) -> result_t { return p.first; });
+  const result_t r = accumulate(nums.begin(), nums.end(), 0);
   return r;
 }
 
 result_t part_2(const lines_t& lines) {
-  const wide_schematic_t s = get_wide_shematic(parse_schematic(lines));
+  const schematic_t s = parse_schematic(lines);
   const vector<result_t> ratios = gear_ratios(s);
   const result_t r = accumulate(ratios.cbegin(), ratios.cend(), 0);
   return r;
