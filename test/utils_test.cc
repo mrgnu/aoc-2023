@@ -40,3 +40,12 @@ TEST_CASE("split_string", "[utils][split_string]") {
                                                       " baz ",
                                                   });
 }
+
+TEST_CASE("split_once", "[utils][split_string]") {
+  auto [f, s] = split_once("foo | bar", std::regex("[[:blank:]]\\|[[:blank:]]",
+                                                   std::regex::extended));
+  REQUIRE(f == "foo");
+  REQUIRE(s == "bar");
+
+  REQUIRE_THROWS(split_once("foobar", std::regex(";")));
+}

@@ -1,5 +1,6 @@
 #include "utils.hh"
 
+#include <format>
 #include <fstream>
 #include <istream>
 
@@ -15,6 +16,17 @@ lines_t read_lines(const std::filesystem::path& path) {
     lines.push_back(line);
   }
   return lines;
+}
+
+std::pair<part_t, part_t> split_once(const std::string& s,
+                                     const std::regex& p) {
+  smatch m;
+  if (!regex_search(s, m, p)) {
+    throw runtime_error(format("pattern not found in '{}'", s));
+  }
+  const part_t first = m.prefix();
+  const part_t second(m[0].second, s.cend());
+  return {first, second};
 }
 
 parts_t split_string(const std::string& s, const std::regex& p) {
