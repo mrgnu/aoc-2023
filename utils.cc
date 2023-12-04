@@ -10,6 +10,9 @@ namespace utils {
 
 lines_t read_lines(const std::filesystem::path& path) {
   ifstream is(path, std::ios::in);
+  if (is.bad() || is.fail()) {
+    throw runtime_error(format("couldn't open file '{}'", path.string()));
+  }
   lines_t lines;
   string line;
   while (getline(is, line)) {
