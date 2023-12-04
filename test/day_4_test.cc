@@ -22,3 +22,10 @@ TEST_CASE("read_cards", "[day 4]") {
   REQUIRE(get<WIN_NUMS>(cards.at(6)) ==
           numbers_t{74, 77, 10, 23, 35, 67, 36, 11});
 }
+
+TEST_CASE("example 1", "[day 4]") { REQUIRE(part_1(example_input) == 13); }
+
+TEST_CASE("part 1", "[day 4]") {
+  const lines_t lines = utils::read_lines("res/day_4_part_1.txt");
+  REQUIRE(part_1(lines) == 21959);
+}

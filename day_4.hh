@@ -32,4 +32,8 @@ using cards_t = std::map<card_id_t, card_t>;
 
 cards_t read_cards(const utils::lines_t& lines);
 
+using result_t = unsigned long;
+
+result_t part_1(const utils::lines_t& lines);
+
 }  // namespace day_4
