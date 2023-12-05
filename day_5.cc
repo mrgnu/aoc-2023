@@ -30,12 +30,26 @@ constexpr inline id_t range_len(const range_map_t& range_map) {
 // NOTE: range_maps is assumed to be sorted on source start
 optional<range_map_t> find_range_map(const range_maps_t& range_maps,
                                      const id_t& source_id) {
-  // TODO: figure out if some kind of binary search is possible
-  for (const range_map_t& range_map : range_maps) {
+  using i_t = long;
+  i_t left = 0;
+  i_t right = range_maps.size() - 1;
+  while (left <= right) {
+    const i_t mid = (left + right) / 2;
+    const range_map_t& range_map = range_maps.at(mid);
     const id_t& start = source_start(range_map);
     const id_t end = start + range_len(range_map);
-    if (source_id >= start && source_id < end) return range_map;
-    if (source_id < start) break;
+
+    if (source_id < start) {
+      right = mid - 1;
+      continue;
+    }
+
+    if (source_id >= end) {
+      left = mid + 1;
+      continue;
+    }
+
+    return range_map;
   }
   return {};
 }
