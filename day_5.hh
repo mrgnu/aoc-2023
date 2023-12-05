@@ -50,7 +50,7 @@ enum range_map_tuple_t {
   RANGE_NAME = 3,
 };
 
-using id_t = int;
+using id_t = long;
 using ids_t = std::vector<id_t>;
 using range_map_t = std::tuple<id_t, id_t, id_t>;
 using range_maps_t = std::vector<range_map_t>;
@@ -67,5 +67,7 @@ using input_t = std::pair<ids_t, categories_t>;
 id_t get_dest(const range_maps_t& range_maps, const id_t& source_id);
 
 input_t parse_input(const utils::lines_t& lines);
+
+id_t part_1(const utils::lines_t& lines);
 
 }  // namespace day_5

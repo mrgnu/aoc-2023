@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <format>
+#include <numeric>
 #include <optional>
 
 #include "utils.hh"
@@ -39,8 +40,8 @@ optional<range_map_t> find_range_map(const range_maps_t& range_maps,
   return {};
 }
 
-void sort_by_source_start(range_maps_t& range_map) {
-  sort(range_map.begin(), range_map.end(),
+void sort_by_source_start(range_maps_t& range_maps) {
+  sort(range_maps.begin(), range_maps.end(),
        [](const range_map_t& a, const range_map_t& b) -> bool {
          return source_start(a) < source_start(b);
        });
@@ -50,7 +51,7 @@ ids_t parse_ids(const line_t& ids_str) {
   const parts_t id_strs = split_string(ids_str, regex("[[:blank:]]+"));
   ids_t ids;
   for (const part_t& id_str : id_strs) {
-    ids.push_back(stoi(id_str));
+    ids.push_back(stol(id_str));
   }
   return ids;
 }
@@ -81,7 +82,18 @@ category_t parse_category(const lines_t& category_lines) {
     range_maps.push_back(range_map);
   }
 
+  // NOTE: sort on source start
+  sort_by_source_start(range_maps);
+
   return {name, range_maps};
+}
+
+id_t remap_seed(const categories_t& categories, const id_t seed_id) {
+  id_t id = seed_id;
+  for (const category_t& category : categories) {
+    id = get_dest(category.second, id);
+  }
+  return id;
 }
 
 }  // namespace
@@ -93,7 +105,7 @@ id_t get_dest(const range_maps_t& range_maps, const id_t& source_id) {
 
   if (!range_map) return source_id;
 
-  const int delta = source_id - source_start(*range_map);
+  const long delta = source_id - source_start(*range_map);
   const id_t dest_id = dest_start(*range_map) + delta;
   return dest_id;
 }
@@ -124,6 +136,19 @@ input_t parse_input(const lines_t& lines) {
   }
 
   return {seeds, categories};
+}
+
+id_t part_1(const lines_t& lines) {
+  const input_t input = parse_input(lines);
+  const ids_t seed_ids = input.first;
+  const categories_t& cats = input.second;
+
+  ids_t location_ids;
+  transform(seed_ids.cbegin(), seed_ids.cend(), back_inserter(location_ids),
+            [&cats](const id_t& id) -> id_t { return remap_seed(cats, id); });
+
+  sort(location_ids.begin(), location_ids.end());
+  return location_ids.front();
 }
 
 }  // namespace day_5

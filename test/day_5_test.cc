@@ -52,6 +52,7 @@ TEST_CASE("get_dest", "[day 5]") {
 }
 
 TEST_CASE("parse_input", "[day 5]") {
+  // NOTE: range maps are sorted on source start
   const input_t expected_partial{
       // seeds
       {79, 14, 55, 13},
@@ -59,16 +60,16 @@ TEST_CASE("parse_input", "[day 5]") {
           category_t{
               "seed-to-soil map",
               range_maps_t{
-                  {50, 98, 2},
                   {52, 50, 48},
+                  {50, 98, 2},
               },
           },
           category_t{
               "soil-to-fertilizer map",
               range_maps_t{
+                  {39, 0, 15},
                   {0, 15, 37},
                   {37, 52, 2},
-                  {39, 0, 15},
               },
           },
       },
@@ -79,4 +80,10 @@ TEST_CASE("parse_input", "[day 5]") {
   REQUIRE(actual.second.size() == 7);
   REQUIRE(actual.second.at(0) == expected_partial.second.at(0));
   REQUIRE(actual.second.at(1) == expected_partial.second.at(1));
+}
+
+TEST_CASE("example 1", "[day 5]") { REQUIRE(part_1(example_lines) == 35); }
+
+TEST_CASE("part 1", "[day 5]") {
+  REQUIRE(part_1(read_lines("res/day_5_part_1.txt")) == 806029445);
 }
