@@ -42,3 +42,12 @@ target_link_libraries(day_4_tests
         PRIVATE Catch2::Catch2WithMain
         utils
         )
+
+add_executable(day_5_tests
+        day_5_test.cc
+	../day_5.cc
+        )
+target_link_libraries(day_5_tests
+        PRIVATE Catch2::Catch2WithMain
+        utils
+        )
