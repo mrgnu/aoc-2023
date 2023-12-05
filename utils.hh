@@ -19,4 +19,6 @@ std::pair<part_t, part_t> split_once(const std::string& s, const std::regex& p);
 
 parts_t split_string(const std::string& s, const std::regex& p);
 
+std::vector<lines_t> partition_by_empty_lines(const lines_t& lines);
+
 }  // namespace utils

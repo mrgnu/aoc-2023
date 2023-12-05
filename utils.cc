@@ -42,4 +42,22 @@ parts_t split_string(const std::string& s, const std::regex& p) {
   return parts;
 }
 
+vector<lines_t> partition_by_empty_lines(const lines_t& lines) {
+  vector<lines_t> partitions;
+
+  for (auto it = lines.begin();;) {
+    while (it != lines.cend() && it->empty()) ++it;
+    if (it == lines.cend()) break;
+
+    lines_t partition;
+    while (it != lines.cend() && !it->empty()) {
+      partition.push_back(*it);
+      ++it;
+    }
+    partitions.push_back(partition);
+  }
+
+  return partitions;
+}
+
 }  // namespace utils

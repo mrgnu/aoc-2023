@@ -49,3 +49,16 @@ TEST_CASE("split_once", "[utils][split_string]") {
 
   REQUIRE_THROWS(split_once("foobar", std::regex(";")));
 }
+
+TEST_CASE("partition_by_empty_lines", "[utils]") {
+  REQUIRE(partition_by_empty_lines(lines_t{}).empty());
+
+  lines_t in = {
+      "", "foo", "bar", "", "baz", "", "", "quux", "",
+  };
+  const std::vector<lines_t> actual = partition_by_empty_lines(in);
+  REQUIRE(actual.size() == 3);
+  REQUIRE(actual.at(0) == lines_t{"foo", "bar"});
+  REQUIRE(actual.at(1) == lines_t{"baz"});
+  REQUIRE(actual.at(2) == lines_t{"quux"});
+}
