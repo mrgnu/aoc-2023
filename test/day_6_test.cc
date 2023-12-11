@@ -36,6 +36,12 @@ TEST_CASE("parse_lines", "[day 6]") {
 
 TEST_CASE("get_winning_times", "[day 6]") {
   REQUIRE(get_winning_times(race_t{7, 9}) == std::vector<result_t>{2, 3, 4, 5});
+
+  REQUIRE(get_winning_times(race_t{15, 40}) ==
+          std::vector<result_t>{4, 5, 6, 7, 8, 9, 10, 11});
+
+  REQUIRE(get_winning_times(race_t{30, 200}) ==
+          std::vector<result_t>{11, 12, 13, 14, 15, 16, 17, 18, 19});
 }
 
 TEST_CASE("example 1", "[day 6]") { REQUIRE(part_1(example_lines) == 288); }
