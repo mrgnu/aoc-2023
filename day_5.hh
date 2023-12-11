@@ -47,7 +47,6 @@ enum range_map_tuple_t {
   DESTINATION_RANGE_START = 0,
   SOURCE_RANGE_START = 1,
   RANGE_LENGTH = 2,
-  RANGE_NAME = 3,
 };
 
 using id_t = long;
@@ -69,5 +68,7 @@ id_t get_dest(const range_maps_t& range_maps, const id_t& source_id);
 input_t parse_input(const utils::lines_t& lines);
 
 id_t part_1(const utils::lines_t& lines);
+
+id_t part_2(const utils::lines_t& lines);
 
 }  // namespace day_5

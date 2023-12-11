@@ -1,6 +1,7 @@
 #include "day_5.hh"
 
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <numeric>
 #include <optional>
@@ -54,11 +55,27 @@ optional<range_map_t> find_range_map(const range_maps_t& range_maps,
   return {};
 }
 
-void sort_by_source_start(range_maps_t& range_maps) {
+optional<range_map_t> find_next_range_map(const range_maps_t& range_maps,
+                                          const id_t& id) {
+  for (const range_map_t& range_map : range_maps) {
+    const id_t& start = get<SOURCE_RANGE_START>(range_map);
+    if (id < start) {
+      return range_map;
+    }
+  }
+  return {};
+}
+
+template <range_map_tuple_t sorting>
+void sort_by(range_maps_t& range_maps) {
   sort(range_maps.begin(), range_maps.end(),
        [](const range_map_t& a, const range_map_t& b) -> bool {
-         return source_start(a) < source_start(b);
+         return get<sorting>(a) < get<sorting>(b);
        });
+}
+
+void sort_by_source_start(range_maps_t& range_maps) {
+  sort_by<SOURCE_RANGE_START>(range_maps);
 }
 
 ids_t parse_ids(const line_t& ids_str) {
@@ -110,21 +127,86 @@ id_t remap_seed(const categories_t& categories, const id_t seed_id) {
   return id;
 }
 
+// traverse categories map from start to finish, shrinking the range
+// length to produce the range using the same path (aka same set of
+// range maps).
+range_map_t collect_consecutive_range(const categories_t& categories,
+                                      const id_t seed_range_start,
+                                      id_t seed_range_len) {
+  id_t id = seed_range_start;
+  id_t len = seed_range_len;
+  for (const category_t& category : categories) {
+    const range_maps_t& range_maps = category.second;
+    optional<range_map_t> range_map = find_range_map(range_maps, id);
+
+    // this step hit a range map, figure out how many ids hit it
+    if (range_map) {
+      const long delta = id - source_start(*range_map);
+      const id_t dest_id = dest_start(*range_map) + delta;
+      id = dest_id;
+      len = min(len, range_len(*range_map) - delta);
+      continue;
+    }
+
+    // this step didn't hit a range map, figure out distance to the
+    // next larger one
+    optional<range_map_t> next_map = find_next_range_map(range_maps, id);
+
+    // no next means all IDs >= source map to identity - keep old len and id
+    if (!next_map) {
+      continue;
+    }
+
+    // len is capped to distance from source ID to start of next range map
+    len = min(len, source_start(*next_map) - id);
+  }
+
+  return {id, seed_range_start, len};
+}
+
+range_maps_t collect_consecutive_ranges(const categories_t& categories,
+                                        const id_t seed_range_start,
+                                        id_t seed_range_len) {
+  const id_t seed_range_end = seed_range_start + seed_range_len;
+  range_maps_t out_maps;
+
+  id_t start = seed_range_start;
+  id_t len = seed_range_len;
+  while (len > 0) {
+    const range_map_t con_range =
+        collect_consecutive_range(categories, start, len);
+    const id_t con_len = range_len(con_range);
+    start += con_len;
+    len -= con_len;
+    out_maps.push_back(con_range);
+  }
+
+  return out_maps;
+}
+
+id_t find_min_location_from_ranges(const categories_t& categories,
+                                   const ids_t& seed_ranges) {
+  id_t min_dist_seed_id = 0;
+  id_t min_location_id = numeric_limits<id_t>::max();
+  for (ids_t::size_type i = 0; i < seed_ranges.size(); i += 2) {
+    const id_t seed_range_start = seed_ranges.at(i + 0);
+    const id_t seed_range_len = seed_ranges.at(i + 1);
+    range_maps_t range_maps = collect_consecutive_ranges(
+        categories, seed_range_start, seed_range_len);
+    sort_by<DESTINATION_RANGE_START>(range_maps);
+    if (dest_start(range_maps.front()) < min_location_id) {
+      min_dist_seed_id = source_start(range_maps.front());
+      min_location_id = dest_start(range_maps.front());
+    }
+  }
+  return min_location_id;
+}
+
 }  // namespace
 
 namespace day_5 {
 
-id_t get_dest(const range_maps_t& range_maps, const id_t& source_id) {
-  optional<range_map_t> range_map = find_range_map(range_maps, source_id);
-
-  if (!range_map) return source_id;
-
-  const long delta = source_id - source_start(*range_map);
-  const id_t dest_id = dest_start(*range_map) + delta;
-  return dest_id;
-}
-
-input_t parse_input(const lines_t& lines) {
+input_t parse_input(const utils::lines_t& lines) {
   const vector<lines_t> partitions = partition_by_empty_lines(lines);
 
   if (partitions.size() < 2) {
@@ -152,6 +234,16 @@ input_t parse_input(const lines_t& lines) {
   return {seeds, categories};
 }
 
+id_t get_dest(const range_maps_t& range_maps, const id_t& source_id) {
+  optional<range_map_t> range_map = find_range_map(range_maps, source_id);
+
+  if (!range_map) return source_id;
+
+  const long delta = source_id - source_start(*range_map);
+  const id_t dest_id = dest_start(*range_map) + delta;
+  return dest_id;
+}
+
 id_t part_1(const lines_t& lines) {
   const input_t input = parse_input(lines);
   const ids_t seed_ids = input.first;
@@ -163,6 +255,15 @@ id_t part_1(const lines_t& lines) {
 
   sort(location_ids.begin(), location_ids.end());
   return location_ids.front();
+}
+
+id_t part_2(const lines_t& lines) {
+  const input_t input = parse_input(lines);
+  const ids_t seed_ranges = input.first;
+  const categories_t& categories = input.second;
+
+  const id_t location = find_min_location_from_ranges(categories, seed_ranges);
+  return location;
 }
 
 }  // namespace day_5

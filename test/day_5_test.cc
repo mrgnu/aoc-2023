@@ -87,3 +87,9 @@ TEST_CASE("example 1", "[day 5]") { REQUIRE(part_1(example_lines) == 35); }
 TEST_CASE("part 1", "[day 5]") {
   REQUIRE(part_1(read_lines("res/day_5_part_1.txt")) == 806029445);
 }
+
+TEST_CASE("example 2", "[day 5]") { REQUIRE(part_2(example_lines) == 46); }
+
+TEST_CASE("part 2", "[day 5]") {
+  REQUIRE(part_2(read_lines("res/day_5_part_1.txt")) == 59370572);
+}
