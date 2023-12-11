@@ -56,11 +56,26 @@ vector<result_t> get_winning_times(const race_t& race) {
   const time_t& t = race.first;
   const dist_t& d = race.second;
 
+  // v = t
+  // d = (T - t) * v
+  // d = T*t - t*t
+  // t*t - T*t + d = 0
+  const result_t b = -t;
+  const result_t c = d + 1;  // NOTE: +1 to make sure it's a win and not a tie
+  const double sq = sqrt(b * b - 4 * c);
+  array<double, 2> xs{
+      (-b + sq) / 2.0,
+      (-b - sq) / 2.0,
+  };
+  sort(xs.begin(), xs.end());
+
+  const result_t l = ceil(xs.at(0));
+  const result_t r = floor(xs.at(1));
+
   vector<result_t> rs;
-  for (result_t i = 1; i < t; ++i) {
-    const auto v = i;
-    const dist_t nd = (t - i) * v;
-    if (nd > d) rs.push_back(i);
+  rs.reserve(r - l + 1);
+  for (result_t i = l; i <= r; ++i) {
+    rs.push_back(i);
   }
   return rs;
 }
