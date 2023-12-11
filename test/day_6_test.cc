@@ -33,3 +33,13 @@ TEST_CASE("parse_lines", "[day 6]") {
                                             race_t{30, 200},
                                         });
 }
+
+TEST_CASE("get_winning_times", "[day 6]") {
+  REQUIRE(get_winning_times(race_t{7, 9}) == std::vector<result_t>{2, 3, 4, 5});
+}
+
+TEST_CASE("example 1", "[day 6]") { REQUIRE(part_1(example_lines) == 288); }
+
+TEST_CASE("part 1", "[day 6]") {
+  REQUIRE(part_1(read_lines("res/day_6_part_1.txt")) == 440000);
+}

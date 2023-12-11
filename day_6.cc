@@ -1,6 +1,8 @@
 #include "day_6.hh"
 
+#include <cmath>
 #include <format>
+#include <numeric>
 #include <ranges>
 
 using namespace std;
@@ -48,6 +50,30 @@ races_t parse_lines(const lines_t& lines) {
     races.emplace_back(times.at(i), dists.at(i));
   }
   return races;
+}
+
+vector<result_t> get_winning_times(const race_t& race) {
+  const time_t& t = race.first;
+  const dist_t& d = race.second;
+
+  vector<result_t> rs;
+  for (result_t i = 1; i < t; ++i) {
+    const auto v = i;
+    const dist_t nd = (t - i) * v;
+    if (nd > d) rs.push_back(i);
+  }
+  return rs;
+}
+
+result_t part_1(const lines_t& lines) {
+  const races_t races = parse_lines(lines);
+  auto times = races | views::transform(get_winning_times) |
+               views::transform(
+                   [](const vector<result_t>& times) { return times.size(); });
+  const result_t r =
+      accumulate(times.begin(), times.end(), 1, multiplies<result_t>());
+
+  return r;
 }
 
 }  // namespace day_6
