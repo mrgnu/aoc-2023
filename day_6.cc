@@ -22,6 +22,22 @@ vector<long> read_vals(const line_t& line) {
   return vals;
 }
 
+result_t exp_f(const result_t v) {
+  return pow(10, static_cast<result_t>(ceil(log10(v))));
+}
+
+race_t apply_kerning(const races_t& races) {
+  time_t t = 0;
+  dist_t d = 0;
+  for (const race_t& race : races) {
+    const auto& [rt, rd] = race;
+
+    t = t * exp_f(rt) + rt;
+    d = d * exp_f(rd) + rd;
+  }
+  return {t, d};
+}
+
 }  // namespace
 
 namespace day_6 {
@@ -88,6 +104,13 @@ result_t part_1(const lines_t& lines) {
   const result_t r =
       accumulate(times.begin(), times.end(), 1, multiplies<result_t>());
 
+  return r;
+}
+
+result_t part_2(const lines_t& lines) {
+  const races_t races = parse_lines(lines);
+  const race_t kerned = apply_kerning(races);
+  const result_t r = get_winning_times(kerned).size();
   return r;
 }
 
