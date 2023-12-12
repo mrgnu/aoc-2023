@@ -22,4 +22,6 @@ using games_t = std::vector<game_t>;
 
 games_t parse_input(const utils::lines_t& lines);
 
+games_t sort_games(const games_t& games);
+
 }  // namespace day_7
