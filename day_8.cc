@@ -10,7 +10,7 @@ namespace {
 using namespace day_8;
 
 map_t::value_type parse_mapping(const line_t& line) {
-  static const string coord_pat = "[[:alpha:]]{3}";
+  static const string coord_pat = "[[:alnum:]]{3}";
   regex pat(
       format("^({}) = \\(({}), ({})\\)$", coord_pat, coord_pat, coord_pat));
   smatch m;
