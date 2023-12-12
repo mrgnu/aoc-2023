@@ -24,6 +24,7 @@ using winnings_t = long;
 games_t parse_input(const utils::lines_t& lines);
 
 games_t sort_games(const games_t& games);
+games_t wild_sort_games(const games_t& games);
 
 winnings_t part_1(const utils::lines_t& lines);
 

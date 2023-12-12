@@ -32,29 +32,36 @@ enum hand_type_t {
   FIVE_OF_A_KIND = 6,
 };
 
-hand_type_t get_hand_type(const hand_t& hand) {
-  using count_t = unsigned char;
-  map<card_t, count_t> cards;
+using count_t = unsigned char;
+using card_counts_t = map<card_t, count_t>;
+
+card_counts_t get_card_counts(const hand_t& hand) {
+  card_counts_t card_counts;
   for (const card_t c : hand) {
-    auto it = cards.find(c);
-    if (it == cards.end()) {
-      cards[c] = 1;
+    auto it = card_counts.find(c);
+    if (it == card_counts.end()) {
+      card_counts[c] = 1;
     } else {
       ++(it->second);
     }
   }
+  return card_counts;
+}
 
-  switch (cards.size()) {
+hand_type_t get_hand_type(const card_counts_t& card_counts) {
+  switch (card_counts.size()) {
     case 1:
       return FIVE_OF_A_KIND;
     case 2:
       // either full house or four of a kind
-      return (cards.cbegin()->second == 1 || cards.cbegin()->second == 4)
+      return (card_counts.cbegin()->second == 1 ||
+              card_counts.cbegin()->second == 4)
                  ? FOUR_OF_A_KIND
                  : FULL_HOUSE;
     case 3:
       // either two pairs or three of a kind
-      return (cards.cbegin()->second == 2 || next(cards.cbegin())->second == 2)
+      return (card_counts.cbegin()->second == 2 ||
+              next(card_counts.cbegin())->second == 2)
                  ? TWO_PAIR
                  : THREE_OF_A_KIND;
     case 4:
@@ -65,6 +72,10 @@ hand_type_t get_hand_type(const hand_t& hand) {
     default:
       throw logic_error("something is wrong");
   }
+}
+
+hand_type_t get_hand_type(const hand_t& hand) {
+  return get_hand_type(get_card_counts(hand));
 }
 
 using val_t = int;
@@ -102,9 +113,60 @@ bool hand_comp(const hand_t& a, const hand_t& b) {
   return false;
 }
 
-winnings_t compute_winnings(const games_t& games) {
+card_counts_t get_wild_card_counts(const hand_t& hand) {
+  card_counts_t counts = get_card_counts(hand);
+  auto wild_it = counts.find('J');
+
+  // no jokers
+  if (wild_it == counts.cend()) return counts;
+
+  // only jokers
+  if (counts.size() == 1) return counts;
+
+  // promote jokers to whatever card has most occurances, excluding jokers
+
+  // unique cards in hand, ordered by count, decreasing
+  vector<card_t> sorted;
+  for (const auto& p : counts) sorted.push_back(p.first);
+  sort(sorted.begin(), sorted.end(),
+       [&counts](const card_t& a, const card_t& b) -> bool {
+         // NOTE: reverse condition, we want most occurences first
+         return counts.at(a) > counts.at(b);
+       });
+
+  // *it will represent unique card with most occurences, excluding joker
+  auto it = sorted.begin();
+  if (*it == 'J') ++it;
+
+  const count_t j_count = wild_it->second;
+  counts.erase(wild_it);
+  counts[*it] += j_count;
+
+  return counts;
+}
+
+constexpr inline val_t get_wild_card_value(const card_t& c) {
+  return c == 'J' ? 1 : get_card_value(c);
+}
+
+bool wild_hand_comp(const hand_t& a, const hand_t& b) {
+  const hand_type_t at = get_hand_type(get_wild_card_counts(a));
+  const hand_type_t bt = get_hand_type(get_wild_card_counts(b));
+
+  if (at != bt) {
+    return at < bt;
+  }
+
+  for (hand_t::size_type i = 0; i < a.size(); ++i) {
+    const val_t av = get_wild_card_value(a[i]);
+    const val_t bv = get_wild_card_value(b[i]);
+    if (av != bv) return av < bv;
+  }
+  return false;
+}
+
+winnings_t compute_winnings(const games_t& sorted) {
   winnings_t total_winnings = 0;
-  const games_t sorted = sort_games(games);
   for (auto it = sorted.cbegin(); it != sorted.cend(); ++it) {
     const game_t& game = *it;
     const int rank = distance(sorted.cbegin(), it) + 1;
@@ -136,8 +198,18 @@ games_t sort_games(const games_t& games) {
   return sorted;
 }
 
+games_t wild_sort_games(const games_t& games) {
+  games_t sorted(games.cbegin(), games.cend());
+  sort(sorted.begin(), sorted.end(), [](const game_t& a, const game_t& b) {
+    return wild_hand_comp(a.first, b.first);
+  });
+  return sorted;
+}
+
 winnings_t part_1(const lines_t& lines) {
-  return compute_winnings(parse_input(lines));
+  const games_t games = parse_input(lines);
+  const games_t sorted = sort_games(games);
+  return compute_winnings(sorted);
 }
 
 }  // namespace day_7
