@@ -18,6 +18,16 @@ const utils::lines_t example_1{
     "ZZZ = (ZZZ, ZZZ)",
 };
 
+const utils::lines_t example_2{
+    // clang-format off
+    "LLR",
+    "",
+    "AAA = (BBB, BBB)",
+    "BBB = (AAA, ZZZ)",
+    "ZZZ = (ZZZ, ZZZ)",
+    // clang-format on
+};
+
 TEST_CASE("parse_lines", "[day 8]") {
   REQUIRE(parse_lines(example_1) == input_t{
                                         "RL",
@@ -31,4 +41,11 @@ TEST_CASE("parse_lines", "[day 8]") {
                                             {"ZZZ", {"ZZZ", "ZZZ"}},
                                         },
                                     });
+}
+
+TEST_CASE("part 1 example 1", "[day 8]") { REQUIRE(part_1(example_1) == 2); }
+TEST_CASE("part 1 example 2", "[day 8]") { REQUIRE(part_1(example_2) == 6); }
+
+TEST_CASE("part 1", "[day 8]") {
+  REQUIRE(part_1(utils::read_lines("res/day_8_part_1.txt")) == 13939);
 }

@@ -25,6 +25,28 @@ map_t::value_type parse_mapping(const line_t& line) {
   return {from, {left, right}};
 }
 
+vector<coord_t> walk(const input_t& input, const coord_t& from,
+                     const coord_t& to) {
+  const directions_t& dirs = input.first;
+  const map_t& map = input.second;
+
+  directions_t::size_type i = 0;
+  coord_t c = from;
+  vector<coord_t> path;
+  while (c != to) {
+    const coords_t& cs = map.at(c);
+    const direction_t& d = dirs[i];
+    ++i;
+    while (i >= dirs.size()) i -= dirs.size();
+    c = (d == 'L') ? cs.first : cs.second;
+    path.push_back(c);
+  }
+
+  return path;
+}
+
+vector<coord_t> walk(const input_t& input) { return walk(input, "AAA", "ZZZ"); }
+
 }  // namespace
 
 namespace day_8 {
@@ -42,6 +64,12 @@ input_t parse_lines(const lines_t& lines) {
   }
 
   return {directions, map};
+}
+
+result_t part_1(const lines_t& lines) {
+  const input_t input = parse_lines(lines);
+  const vector<coord_t> path = walk(input);
+  return path.size();
 }
 
 }  // namespace day_8
