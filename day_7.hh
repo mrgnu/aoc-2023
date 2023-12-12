@@ -27,5 +27,6 @@ games_t sort_games(const games_t& games);
 games_t wild_sort_games(const games_t& games);
 
 winnings_t part_1(const utils::lines_t& lines);
+winnings_t part_2(const utils::lines_t& lines);
 
 }  // namespace day_7

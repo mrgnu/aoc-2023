@@ -212,4 +212,10 @@ winnings_t part_1(const lines_t& lines) {
   return compute_winnings(sorted);
 }
 
+winnings_t part_2(const lines_t& lines) {
+  const games_t games = parse_input(lines);
+  const games_t sorted = wild_sort_games(games);
+  return compute_winnings(sorted);
+}
+
 }  // namespace day_7
