@@ -28,3 +28,9 @@ TEST_CASE("sort_games", "[day 7]") {
                         game_t{hand_t{'Q', 'Q', 'Q', 'J', 'A'}, 483},
                     });
 }
+
+TEST_CASE("example 1", "[day 7]") { REQUIRE(part_1(example_input) == 6440); }
+
+TEST_CASE("part 1", "[day 7]") {
+  REQUIRE(part_1(utils::read_lines("res/day_7_part_1.txt")) == 250120186);
+}

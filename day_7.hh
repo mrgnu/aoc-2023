@@ -19,9 +19,12 @@ using card_t = std::string::value_type;
 using hand_t = std::array<card_t, 5>;
 using game_t = std::pair<hand_t, bid_t>;
 using games_t = std::vector<game_t>;
+using winnings_t = long;
 
 games_t parse_input(const utils::lines_t& lines);
 
 games_t sort_games(const games_t& games);
+
+winnings_t part_1(const utils::lines_t& lines);
 
 }  // namespace day_7

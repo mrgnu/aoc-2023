@@ -102,6 +102,19 @@ bool hand_comp(const hand_t& a, const hand_t& b) {
   return false;
 }
 
+winnings_t compute_winnings(const games_t& games) {
+  winnings_t total_winnings = 0;
+  const games_t sorted = sort_games(games);
+  for (auto it = sorted.cbegin(); it != sorted.cend(); ++it) {
+    const game_t& game = *it;
+    const int rank = distance(sorted.cbegin(), it) + 1;
+    const bid_t& bid = game.second;
+    const winnings_t winnings = bid * rank;
+    total_winnings += winnings;
+  }
+  return total_winnings;
+}
+
 }  // namespace
 
 namespace day_7 {
@@ -121,6 +134,10 @@ games_t sort_games(const games_t& games) {
     return hand_comp(a.first, b.first);
   });
   return sorted;
+}
+
+winnings_t part_1(const lines_t& lines) {
+  return compute_winnings(parse_input(lines));
 }
 
 }  // namespace day_7
