@@ -18,4 +18,6 @@ input_t parse_lines(const utils::lines_t& lines);
 
 result_t part_1(const utils::lines_t& lines);
 
+result_t part_2(const utils::lines_t& lines);
+
 }  // namespace day_8
