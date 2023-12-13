@@ -12,4 +12,6 @@ using result_t = long;
 
 input_t parse_input(const utils::lines_t& lines);
 
+value_t predict(const timeline_t& timeline);
+
 }  // namespace day_9

@@ -19,3 +19,10 @@ TEST_CASE("parse_input", "[day 9]") {
                                             timeline_t{10, 13, 16, 21, 30, 45},
                                         });
 }
+
+TEST_CASE("predict", "[day 9]") {
+  const input_t input = parse_input(example_input);
+  REQUIRE(predict(input[0]) == 18);
+  REQUIRE(predict(input[1]) == 28);
+  REQUIRE(predict(input[2]) == 68);
+}

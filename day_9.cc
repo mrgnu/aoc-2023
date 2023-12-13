@@ -17,6 +17,37 @@ timeline_t parse_line(const line_t& line) {
   return timeline_t(nums.begin(), nums.end());
 }
 
+bool all_zero(const timeline_t& timeline) {
+  auto f = timeline | views::filter([](const value_t& v) { return v != 0; });
+  return f.empty();
+}
+
+value_t predict(const timeline_t& timeline) {
+  vector<timeline_t> predictions;
+  predictions.reserve(timeline.size());
+  predictions.push_back(timeline);
+
+  while (!all_zero(predictions.back())) {
+    const timeline_t& prev = predictions.back();
+    timeline_t prediction;
+    prediction.reserve(prev.size() - 1);
+    for (timeline_t::size_type i = 0; i < prev.size() - 1; ++i) {
+      const value_t delta = prev[i + 1] - prev[i];
+      prediction.push_back(delta);
+    }
+    predictions.push_back(prediction);
+  }
+
+  value_t last_val = 0;
+  for (int i = predictions.size() - 1; i >= 0; --i) {
+    timeline_t& prediction = predictions[i];
+    prediction.push_back(prediction.back() + last_val);
+    last_val = prediction.back();
+  }
+
+  return predictions.front().back();
+}
+
 }  // namespace
 
 namespace day_9 {
@@ -25,5 +56,7 @@ input_t parse_input(const lines_t& lines) {
   auto timelines = lines | views::transform(parse_line);
   return input_t(timelines.begin(), timelines.end());
 }
+
+value_t predict(const timeline_t& timeline) { return ::predict(timeline); }
 
 }  // namespace day_9
