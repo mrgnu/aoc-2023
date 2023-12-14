@@ -26,3 +26,9 @@ TEST_CASE("predict", "[day 9]") {
   REQUIRE(predict(input[1]) == 28);
   REQUIRE(predict(input[2]) == 68);
 }
+
+TEST_CASE("example 1", "[day 9]") { REQUIRE(part_1(example_input) == 114); }
+
+TEST_CASE("part 1", "[day 9]") {
+  REQUIRE(part_1(utils::read_lines("res/day_9_part_1.txt")) == 1584748274);
+}

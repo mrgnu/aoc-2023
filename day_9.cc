@@ -1,5 +1,6 @@
 #include "day_9.hh"
 
+#include <numeric>
 #include <ranges>
 
 using namespace std;
@@ -58,5 +59,11 @@ input_t parse_input(const lines_t& lines) {
 }
 
 value_t predict(const timeline_t& timeline) { return ::predict(timeline); }
+
+result_t part_1(const lines_t& lines) {
+  const input_t input = parse_input(lines);
+  auto ps = input | views::transform(predict);
+  return accumulate(ps.begin(), ps.end(), 0);
+}
 
 }  // namespace day_9
