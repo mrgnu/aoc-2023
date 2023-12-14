@@ -23,7 +23,9 @@ bool all_zero(const timeline_t& timeline) {
   return f.empty();
 }
 
-value_t predict(const timeline_t& timeline) {
+using prediction_stack_t = vector<timeline_t>;
+
+prediction_stack_t build_prediction_stack(const timeline_t& timeline) {
   vector<timeline_t> predictions;
   predictions.reserve(timeline.size());
   predictions.push_back(timeline);
@@ -38,6 +40,12 @@ value_t predict(const timeline_t& timeline) {
     }
     predictions.push_back(prediction);
   }
+
+  return predictions;
+}
+
+value_t predict(const timeline_t& timeline) {
+  vector<timeline_t> predictions = build_prediction_stack(timeline);
 
   value_t last_val = 0;
   for (int i = predictions.size() - 1; i >= 0; --i) {
