@@ -45,16 +45,34 @@ prediction_stack_t build_prediction_stack(const timeline_t& timeline) {
 }
 
 value_t predict(const timeline_t& timeline) {
-  vector<timeline_t> predictions = build_prediction_stack(timeline);
+  vector<timeline_t> stack = build_prediction_stack(timeline);
+
+  auto back_vals =
+      stack | views::transform([](const timeline_t& tl) { return tl.back(); }) |
+      views::reverse;
 
   value_t last_val = 0;
-  for (int i = predictions.size() - 1; i >= 0; --i) {
-    timeline_t& prediction = predictions[i];
-    prediction.push_back(prediction.back() + last_val);
-    last_val = prediction.back();
+  for (const value_t& v : back_vals) {
+    last_val = v + last_val;
   }
 
-  return predictions.front().back();
+  return last_val;
+}
+
+value_t reverse_predict(const timeline_t& timeline) {
+  vector<timeline_t> stack = build_prediction_stack(timeline);
+
+  auto front_vals =
+      stack |
+      views::transform([](const timeline_t& tl) { return tl.front(); }) |
+      views::reverse;
+
+  value_t last_val = 0;
+  for (const value_t& v : front_vals) {
+    last_val = v - last_val;
+  }
+
+  return last_val;
 }
 
 }  // namespace
@@ -71,6 +89,12 @@ value_t predict(const timeline_t& timeline) { return ::predict(timeline); }
 result_t part_1(const lines_t& lines) {
   const input_t input = parse_input(lines);
   auto ps = input | views::transform(predict);
+  return accumulate(ps.begin(), ps.end(), 0);
+}
+
+result_t part_2(const lines_t& lines) {
+  const input_t input = parse_input(lines);
+  auto ps = input | views::transform(reverse_predict);
   return accumulate(ps.begin(), ps.end(), 0);
 }
 

@@ -16,4 +16,6 @@ value_t predict(const timeline_t& timeline);
 
 result_t part_1(const utils::lines_t& lines);
 
+result_t part_2(const utils::lines_t& lines);
+
 }  // namespace day_9
