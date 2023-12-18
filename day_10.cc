@@ -23,7 +23,7 @@ static const std::map<tile_t, std::set<dir_t>> s_tile_connections{
 
 static const std::set<dir_t> s_dirs{LEFT, UP, RIGHT, DOWN};
 
-tile_t get_tile(const map_t& map, const coord_t& c) {
+tile_t tile_at(const map_t& map, const coord_t& c) {
   auto it = map.find(c);
   return it == map.cend() ? '.' : it->second;
 }
@@ -79,7 +79,7 @@ std::pair<coord_t, tile_t> find_start_tile(const map_t& map) {
     int match_count = 0;
     for (const dir_t& dir : dirs) {
       const coord_t nc = move(sc, dir);
-      const tile_t& nt = get_tile(map, nc);
+      const tile_t& nt = tile_at(map, nc);
       if (nt == '.') continue;
       for (const dir_t& nd : s_tile_connections.at(nt)) {
         if (dir == other_dir(nd)) ++match_count;
@@ -91,6 +91,65 @@ std::pair<coord_t, tile_t> find_start_tile(const map_t& map) {
   }
   throw std::runtime_error(
       std::format("no tile type connects {}:{}", sc.first, sc.second));
+}
+
+using dist_map_t = std::map<coord_t, dist_t>;
+
+constexpr std::string dir_str(const dir_t d) {
+  switch (d) {
+    case LEFT:
+      return "left";
+    case UP:
+      return "up";
+    case RIGHT:
+      return "right";
+    case DOWN:
+      return "down";
+  }
+  return "";
+}
+
+dist_map_t create_distance_map(const map_t& map) {
+  const auto [start_coord, start_type] = find_start_tile(map);
+
+  dist_map_t dist_map;
+
+  dist_t dist;
+  dir_t dir;
+  coord_t c;
+
+  // walk loop one direction and set distances
+  dist = 0;
+  dir = *(s_tile_connections.at(start_type).begin());
+  c = start_coord;
+
+  while (true) {
+    dist_map[c] = dist++;
+    c = move(c, dir);
+    if (c == start_coord) break;
+    const tile_t t = tile_at(map, c);
+    auto it = s_tile_connections.at(t).begin();
+    if (*it == other_dir(dir)) ++it;
+    dir = *it;
+  }
+
+  // walk loop other direction and update distances as long as they're smaller
+  dist = 0;
+  dir = *(std::next(s_tile_connections.at(start_type).begin()));
+  c = start_coord;
+  while (true) {
+    auto dist_it = dist_map.find(c);
+    if (dist_it->second < dist) break;
+    dist_it->second = dist++;
+    c = move(c, dir);
+    if (c == start_coord) break;
+    const tile_t t = tile_at(map, c);
+    auto it = s_tile_connections.at(t).begin();
+    if (*it == other_dir(dir)) ++it;
+    dir = *it;
+  }
+
+  return dist_map;
 }
 
 }  // namespace
@@ -109,6 +168,18 @@ map_t parse_map(const lines_t& lines) {
 
 std::pair<coord_t, tile_t> find_start_tile(const map_t& map) {
   return ::find_start_tile(map);
+}
+
+dist_t part_1(const lines_t& lines) {
+  const map_t map = parse_map(lines);
+  const dist_map_t dist_map = create_distance_map(map);
+  auto dists =
+      dist_map | std::views::transform([](const auto& p) { return p.second; });
+  dist_t m = 0;
+  for (const auto& d : dists) {
+    m = std::max(m, d);
+  }
+  return m;
 }
 
 }  // namespace day_10
