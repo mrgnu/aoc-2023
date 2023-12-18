@@ -109,45 +109,49 @@ constexpr std::string dir_str(const dir_t d) {
   return "";
 }
 
+using visitor_t = std::function<bool(const coord_t& c)>;
+
+void walk_path(const map_t& map, visitor_t visit, bool reverse = false) {
+  const auto [start_coord, start_type] = find_start_tile(map);
+  dir_t dir = reverse ? *(std::next(s_tile_connections.at(start_type).begin()))
+                      : *(s_tile_connections.at(start_type).begin());
+  coord_t c = start_coord;
+
+  while (true) {
+    visit(c);
+    c = move(c, dir);
+    if (c == start_coord) break;
+    const tile_t t = tile_at(map, c);
+    auto it = s_tile_connections.at(t).begin();
+    if (*it == other_dir(dir)) ++it;
+    dir = *it;
+  }
+}
+
 dist_map_t create_distance_map(const map_t& map) {
   const auto [start_coord, start_type] = find_start_tile(map);
 
   dist_map_t dist_map;
-
   dist_t dist;
-  dir_t dir;
-  coord_t c;
 
   // walk loop one direction and set distances
   dist = 0;
-  dir = *(s_tile_connections.at(start_type).begin());
-  c = start_coord;
-
-  while (true) {
+  walk_path(map, [&dist_map, &dist](const coord_t& c) {
     dist_map[c] = dist++;
-    c = move(c, dir);
-    if (c == start_coord) break;
-    const tile_t t = tile_at(map, c);
-    auto it = s_tile_connections.at(t).begin();
-    if (*it == other_dir(dir)) ++it;
-    dir = *it;
-  }
+    return true;
+  });
 
   // walk loop other direction and update distances as long as they're smaller
   dist = 0;
-  dir = *(std::next(s_tile_connections.at(start_type).begin()));
-  c = start_coord;
-  while (true) {
-    auto dist_it = dist_map.find(c);
-    if (dist_it->second < dist) break;
-    dist_it->second = dist++;
-    c = move(c, dir);
-    if (c == start_coord) break;
-    const tile_t t = tile_at(map, c);
-    auto it = s_tile_connections.at(t).begin();
-    if (*it == other_dir(dir)) ++it;
-    dir = *it;
-  }
+  walk_path(
+      map,
+      [&dist_map, &dist](const coord_t& c) {
+        auto dist_it = dist_map.find(c);
+        if (dist_it->second < dist) return false;
+        dist_it->second = dist++;
+        return true;
+      },
+      true);
 
   return dist_map;
 }
