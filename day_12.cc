@@ -26,15 +26,25 @@ utils::parts_t trim(const utils::parts_t& parts) {
 }
 
 bool is_valid(const utils::line_t& l, const nums_t& nums) {
-  const utils::parts_t parts =
-      trim(utils::split_string(l, std::regex("[^#]+")));
+  // skip until first broken range
+  const char* ls = l.c_str();
+  while (*ls == '.') ++ls;
+  if (!*ls) return nums.empty();
 
-  if (parts.size() != nums.size()) return false;
+  nums_t::size_type num_i = 0;
+  while (*ls) {
+    if (num_i >= nums.size()) return false;
 
-  for (unsigned i = 0; i < nums.size(); ++i) {
-    if (parts[i].size() != nums[i]) return false;
+    num_t bc = 0;
+    while (*ls == '#') {
+      ++ls;
+      ++bc;
+    }
+    if (bc != nums[num_i]) return false;
+    while (*ls == '.') ++ls;
+    ++num_i;
   }
-  return true;
+  return num_i == nums.size();
 }
 
 arr_count_t count_arrs(const utils::line_t& line) {
