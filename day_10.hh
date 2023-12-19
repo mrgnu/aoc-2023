@@ -22,5 +22,6 @@ map_t parse_map(const utils::lines_t& lines);
 std::pair<coord_t, tile_t> find_start_tile(const map_t& map);
 
 dist_t part_1(const utils::lines_t& lines);
+size_t part_2(const utils::lines_t& lines);
 
 }  // namespace day_10

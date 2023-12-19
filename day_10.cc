@@ -1,6 +1,7 @@
 #include "day_10.hh"
 
 #include <format>
+#include <limits>
 #include <ranges>
 #include <set>
 
@@ -156,6 +157,66 @@ dist_map_t create_distance_map(const map_t& map) {
   return dist_map;
 }
 
+std::set<coord_t> find_enclosed_coords(const map_t& in_map) {
+  // collect loop coords
+  std::set<coord_t> loop_coords;
+  walk_path(in_map, [&loop_coords](const coord_t& c) {
+    loop_coords.insert(c);
+    return true;
+  });
+
+  // make copy of map that has start tile instead of 'S'
+  const auto& [start_coord, start_tile] = find_start_tile(in_map);
+  map_t map(in_map);
+  map[start_coord] = start_tile;
+
+  // figure out limits of loop
+  std::pair<dimen_t, dimen_t> x_lims{std::numeric_limits<dimen_t>::max(), 0};
+  std::pair<dimen_t, dimen_t> y_lims = x_lims;
+  for (const coord_t& c : loop_coords) {
+    x_lims.first = std::min(x_lims.first, c.first);
+    x_lims.second = std::max(x_lims.second, c.first);
+    y_lims.first = std::min(y_lims.first, c.second);
+    y_lims.second = std::max(y_lims.second, c.second);
+  }
+
+  // collect enclosed coords
+  std::set<coord_t> enclosed_coords;
+  for (dimen_t y = y_lims.first; y <= y_lims.second; ++y) {
+    size_t cross_count = 0;
+    for (dimen_t x = x_lims.first; x <= x_lims.second; ++x) {
+      const coord_t c{x, y};
+
+      // if tile isn't part of loop, it's enclosed if cross_count is odd
+      if (loop_coords.find(c) == loop_coords.end()) {
+        if (cross_count % 2) enclosed_coords.insert(c);
+        continue;
+      }
+
+      const auto& t = map.at(c);
+      if (t == '|') {
+        ++cross_count;
+        continue;
+      }
+
+      const std::set<dir_t>& start_conns = s_tile_connections.at(t);
+      assert(start_conns.contains(RIGHT));
+      while (++x < x_lims.second && map.at({x, y}) == '-') {
+        // skip horizontal streaks
+      }
+      const std::set<dir_t>& end_conns = s_tile_connections.at(map.at({x, y}));
+      assert(end_conns.contains(LEFT));
+
+      // NOTE: verticals come first
+      // if they're equal line isn't crossing - e.g. L--J or F-7
+      if (*start_conns.cbegin() == *end_conns.cbegin()) continue;
+      ++cross_count;
+    }
+  }
+
+  return enclosed_coords;
+}
+
 }  // namespace
 
 namespace day_10 {
@@ -184,6 +245,12 @@ dist_t part_1(const lines_t& lines) {
     m = std::max(m, d);
   }
   return m;
+}
+
+size_t part_2(const lines_t& lines) {
+  const map_t map = parse_map(lines);
+  const auto enclosed = find_enclosed_coords(map);
+  return enclosed.size();
 }
 
 }  // namespace day_10

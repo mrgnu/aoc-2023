@@ -88,3 +88,7 @@ TEST_CASE("example 1", "[day 10]") {
 TEST_CASE("part 1", "[day 10]") {
   REQUIRE(part_1(utils::read_lines("res/day_10_part_1.txt")) == 7102);
 }
+
+TEST_CASE("part 2", "[day 10]") {
+  REQUIRE(part_2(utils::read_lines("res/day_10_part_1.txt")) == 363);
+}
