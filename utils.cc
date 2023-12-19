@@ -60,4 +60,9 @@ vector<lines_t> partition_by_empty_lines(const lines_t& lines) {
   return partitions;
 }
 
+void assert(const bool a, const std::string msg) {
+  if (a) return;
+  throw logic_error(msg);
+}
+
 }  // namespace utils

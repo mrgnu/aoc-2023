@@ -21,4 +21,6 @@ parts_t split_string(const std::string& s, const std::regex& p);
 
 std::vector<lines_t> partition_by_empty_lines(const lines_t& lines);
 
+void assert(const bool a, const std::string msg = "assertion failed");
+
 }  // namespace utils
