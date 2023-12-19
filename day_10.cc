@@ -22,13 +22,13 @@ static const std::map<tile_t, std::set<dir_t>> s_tile_connections{
     // clang-format on
 };
 
-static const std::set<dir_t> s_dirs{LEFT, UP, RIGHT, DOWN};
-
 tile_t tile_at(const map_t& map, const coord_t& c) {
   auto it = map.find(c);
   return it == map.cend() ? '.' : it->second;
 }
 
+// get inverse / "from" direction for dir.
+// e.g., if tile connects TO left, this returns FROM right.
 constexpr dir_t other_dir(const dir_t& dir) {
   switch (dir) {
     case LEFT:
@@ -39,9 +39,9 @@ constexpr dir_t other_dir(const dir_t& dir) {
       return LEFT;
     case DOWN:
       return UP;
+    default:
+      throw std::logic_error("unsupported dir");
   };
-
-  throw std::runtime_error("failed to get other dir");
 }
 
 constexpr coord_t move(const coord_t& c, const dir_t d) {
@@ -54,9 +54,9 @@ constexpr coord_t move(const coord_t& c, const dir_t d) {
       return {c.first, c.second - 1};
     case DOWN:
       return {c.first, c.second + 1};
+    default:
+      throw std::logic_error("unsupported dir");
   }
-
-  throw std::runtime_error("failed to move");
 }
 
 std::vector<map_t::value_type> parse_line(const line_t& line, const dimen_t y) {
@@ -94,50 +94,36 @@ std::pair<coord_t, tile_t> find_start_tile(const map_t& map) {
       std::format("no tile type connects {}:{}", sc.first, sc.second));
 }
 
-using dist_map_t = std::map<coord_t, dist_t>;
-
-constexpr std::string dir_str(const dir_t d) {
-  switch (d) {
-    case LEFT:
-      return "left";
-    case UP:
-      return "up";
-    case RIGHT:
-      return "right";
-    case DOWN:
-      return "down";
-  }
-  return "";
-}
-
+// called for each node in path, starting with start node. return
+// false to stop. otherwise, stops before reaching start again.
 using visitor_t = std::function<bool(const coord_t& c)>;
 
-void walk_path(const map_t& map, visitor_t visit, bool reverse = false) {
-  const auto [start_coord, start_type] = find_start_tile(map);
+void walk_path(const input_t& input, visitor_t visit, bool reverse = false) {
+  const auto& [start_coord, map] = input;
+  const tile_t start_type = map.at(start_coord);
   dir_t dir = reverse ? *(std::next(s_tile_connections.at(start_type).begin()))
                       : *(s_tile_connections.at(start_type).begin());
   coord_t c = start_coord;
 
-  while (true) {
-    visit(c);
+  do {
+    if (!visit(c)) break;
     c = move(c, dir);
-    if (c == start_coord) break;
-    const tile_t t = tile_at(map, c);
+    const tile_t t = map.at(c);
     auto it = s_tile_connections.at(t).begin();
     if (*it == other_dir(dir)) ++it;
     dir = *it;
-  }
+  } while (c != start_coord);
 }
 
-dist_map_t create_distance_map(const map_t& map) {
-  const auto [start_coord, start_type] = find_start_tile(map);
+using dist_map_t = std::map<coord_t, dist_t>;
 
+dist_map_t create_distance_map(const input_t& input) {
   dist_map_t dist_map;
   dist_t dist;
 
   // walk loop one direction and set distances
   dist = 0;
-  walk_path(map, [&dist_map, &dist](const coord_t& c) {
+  walk_path(input, [&dist_map, &dist](const coord_t& c) {
     dist_map[c] = dist++;
     return true;
   });
@@ -145,7 +131,7 @@ dist_map_t create_distance_map(const map_t& map) {
   // walk loop other direction and update distances as long as they're smaller
   dist = 0;
   walk_path(
-      map,
+      input,
       [&dist_map, &dist](const coord_t& c) {
         auto dist_it = dist_map.find(c);
         if (dist_it->second < dist) return false;
@@ -157,18 +143,15 @@ dist_map_t create_distance_map(const map_t& map) {
   return dist_map;
 }
 
-std::set<coord_t> find_enclosed_coords(const map_t& in_map) {
+using coords_t = std::set<coord_t>;
+
+coords_t find_enclosed_coords(const input_t& input) {
   // collect loop coords
-  std::set<coord_t> loop_coords;
-  walk_path(in_map, [&loop_coords](const coord_t& c) {
+  coords_t loop_coords;
+  walk_path(input, [&loop_coords](const coord_t& c) {
     loop_coords.insert(c);
     return true;
   });
-
-  // make copy of map that has start tile instead of 'S'
-  const auto& [start_coord, start_tile] = find_start_tile(in_map);
-  map_t map(in_map);
-  map[start_coord] = start_tile;
 
   // figure out limits of loop
   std::pair<dimen_t, dimen_t> x_lims{std::numeric_limits<dimen_t>::max(), 0};
@@ -180,8 +163,10 @@ std::set<coord_t> find_enclosed_coords(const map_t& in_map) {
     y_lims.second = std::max(y_lims.second, c.second);
   }
 
+  const map_t& map = input.second;
+
   // collect enclosed coords
-  std::set<coord_t> enclosed_coords;
+  coords_t enclosed_coords;
   for (dimen_t y = y_lims.first; y <= y_lims.second; ++y) {
     size_t cross_count = 0;
     for (dimen_t x = x_lims.first; x <= x_lims.second; ++x) {
@@ -202,7 +187,7 @@ std::set<coord_t> find_enclosed_coords(const map_t& in_map) {
       const std::set<dir_t>& start_conns = s_tile_connections.at(t);
       assert(start_conns.contains(RIGHT));
       while (++x < x_lims.second && map.at({x, y}) == '-') {
-        // skip horizontal streaks
+        // skip horizontal streak
       }
       const std::set<dir_t>& end_conns = s_tile_connections.at(map.at({x, y}));
       assert(end_conns.contains(LEFT));
@@ -231,13 +216,20 @@ map_t parse_map(const lines_t& lines) {
   return map;
 }
 
+input_t parse_input(const lines_t& lines) {
+  map_t map = parse_map(lines);
+  auto [start_coord, start_tile] = find_start_tile(map);
+  map[start_coord] = start_tile;
+  return {start_coord, map};
+}
+
 std::pair<coord_t, tile_t> find_start_tile(const map_t& map) {
   return ::find_start_tile(map);
 }
 
 dist_t part_1(const lines_t& lines) {
-  const map_t map = parse_map(lines);
-  const dist_map_t dist_map = create_distance_map(map);
+  const input_t input = parse_input(lines);
+  const dist_map_t dist_map = create_distance_map(input);
   auto dists =
       dist_map | std::views::transform([](const auto& p) { return p.second; });
   dist_t m = 0;
@@ -248,8 +240,8 @@ dist_t part_1(const lines_t& lines) {
 }
 
 size_t part_2(const lines_t& lines) {
-  const map_t map = parse_map(lines);
-  const auto enclosed = find_enclosed_coords(map);
+  const input_t input = parse_input(lines);
+  const coords_t enclosed = find_enclosed_coords(input);
   return enclosed.size();
 }
 
