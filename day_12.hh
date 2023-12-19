@@ -10,4 +10,6 @@ using arr_count_t = unsigned long;
 
 bool is_valid(const utils::line_t& l, const nums_t& nums);
 
+arr_count_t part_1(const utils::lines_t& lines);
+
 }  // namespace day_12

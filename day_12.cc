@@ -86,4 +86,12 @@ bool is_valid(const utils::line_t& l, const nums_t& nums) {
   return ::is_valid(l, nums);
 }
 
+arr_count_t part_1(const utils::lines_t& lines) {
+  arr_count_t acc = 0;
+  for (const utils::line_t& line : lines) {
+    acc += count_arrs(line);
+  }
+  return acc;
+}
+
 }  // namespace day_12

@@ -38,3 +38,22 @@ TEST_CASE("is_valid", "[day 12]") {
     REQUIRE(!is_valid(line, {2, 3, 2}));
   }
 }
+
+TEST_CASE("example 1", "[day 12]") {
+  const utils::lines_t lines{
+      // clang-format off
+    "???.### 1,1,3",
+    ".??..??...?##. 1,1,3",
+    "?#?#?#?#?#?#?#? 1,3,1,6",
+    "????.#...#... 4,1,1",
+    "????.######..#####. 1,6,5",
+    "?###???????? 3,2,1",
+      // clang-format on
+  };
+
+  REQUIRE(part_1(lines) == 21);
+}
+
+TEST_CASE("part 1", "[day 12]") {
+  REQUIRE(part_1(utils::read_lines("res/day_12_part_1.txt")) == 7916);
+}
