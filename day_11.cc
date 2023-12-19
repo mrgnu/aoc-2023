@@ -26,7 +26,7 @@ parse_line_t parse_line(const line_t& line, const dimen_t y) {
   return {galaxies, xs};
 }
 
-galaxies_t parse_input(const lines_t& lines) {
+galaxies_t parse_input(const lines_t& lines, const dimen_t exp_rate) {
   dimens_t xs;
   galaxies_t map;
 
@@ -34,13 +34,12 @@ galaxies_t parse_input(const lines_t& lines) {
   for (const line_t& line : lines) {
     const auto [galaxies, row_xs] = parse_line(line, y);
     if (row_xs.empty()) {
-      // no galaxies in this row - expand by increasing y - twice, because y
-      // isn't increased by for loop
-      y += 2;
-      continue;
+      // no galaxies in row - expand by increasing y
+      y += exp_rate;
+    } else {
+      map.insert(galaxies.cbegin(), galaxies.cend());
+      xs.insert(row_xs.cbegin(), row_xs.cend());
     }
-    map.insert(galaxies.cbegin(), galaxies.cend());
-    xs.insert(row_xs.cbegin(), row_xs.cend());
     ++y;
   }
 
@@ -57,7 +56,7 @@ galaxies_t parse_input(const lines_t& lines) {
       x_exp_map[x] = exp_x;
     } else {
       // no galaxies in col - expand
-      ++exp_x;
+      exp_x += exp_rate;
     }
   }
 
@@ -87,10 +86,17 @@ dimen_t acc_distances(const galaxies_t& map) {
 
 namespace day_11 {
 
-galaxies_t parse_map(const utils::lines_t& lines) { return parse_input(lines); }
+galaxies_t parse_map(const utils::lines_t& lines, const dimen_t exp_rate) {
+  return parse_input(lines, exp_rate);
+}
 
 dimen_t part_1(const utils::lines_t& lines) {
-  const galaxies_t map = parse_map(lines);
+  const galaxies_t map = parse_map(lines, 1);
+  return acc_distances(map);
+}
+
+dimen_t part_2(const utils::lines_t& lines, dimen_t exp_rate) {
+  const galaxies_t map = parse_map(lines, exp_rate);
   return acc_distances(map);
 }
 
