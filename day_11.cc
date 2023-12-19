@@ -1,5 +1,6 @@
 #include "day_11.hh"
 
+#include <cmath>
 #include <set>
 
 using namespace utils;
@@ -68,10 +69,29 @@ galaxies_t parse_input(const lines_t& lines) {
   return expanded;
 }
 
+dimen_t distance(const coord_t& from, const coord_t& to) {
+  return std::abs(to.first - from.first) + std::abs(to.second - from.second);
+}
+
+dimen_t acc_distances(const galaxies_t& map) {
+  dimen_t acc = 0;
+  for (auto g_it = map.cbegin(); g_it != map.cend(); ++g_it) {
+    for (auto p_it = std::next(g_it); p_it != map.cend(); ++p_it) {
+      acc += distance(*g_it, *p_it);
+    }
+  }
+  return acc;
+}
+
 }  // namespace
 
 namespace day_11 {
 
 galaxies_t parse_map(const utils::lines_t& lines) { return parse_input(lines); }
+
+dimen_t part_1(const utils::lines_t& lines) {
+  const galaxies_t map = parse_map(lines);
+  return acc_distances(map);
+}
 
 }  // namespace day_11

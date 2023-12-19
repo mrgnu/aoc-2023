@@ -42,3 +42,9 @@ TEST_CASE("parse_map", "[day 11]") {
                                       coord_t{5, 11},
                                   });
 }
+
+TEST_CASE("example 1", "[day 11]") { REQUIRE(part_1(example_1) == 374); }
+
+TEST_CASE("part 1", "[day 11]") {
+  REQUIRE(part_1(utils::read_lines("res/day_11_part_1.txt")) == 9742154);
+}
