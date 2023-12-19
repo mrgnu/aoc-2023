@@ -5,10 +5,11 @@
 namespace day_10 {
 
 enum dir_t {
-  LEFT,
+  // NOTE: code assumes vertical dirs come before horizontal
   UP,
-  RIGHT,
   DOWN,
+  LEFT,
+  RIGHT,
 };
 
 using dimen_t = int;
