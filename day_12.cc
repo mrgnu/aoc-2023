@@ -59,6 +59,8 @@ bool can_fit(str_ptr_t p, const num_t n) {
   return p[n] != '#';
 }
 
+arr_count_t count_arrs_m(str_ptr_t p, num_it_t num, num_it_t num_end);
+
 arr_count_t count_arrs_r(str_ptr_t p, num_it_t num, num_it_t num_end) {
   arr_count_t c = 0;
 
@@ -84,7 +86,7 @@ arr_count_t count_arrs_r(str_ptr_t p, num_it_t num, num_it_t num_end) {
       if (*np) ++np;
 
       // start of p fits first remaining num broken springs - continue matching
-      c += count_arrs_r(np, std::next(num), num_end);
+      c += count_arrs_m(np, std::next(num), num_end);
     }
 
     if (*p == '#') {
@@ -100,7 +102,23 @@ arr_count_t count_arrs_r(str_ptr_t p, num_it_t num, num_it_t num_end) {
   }
   if (*p) ++p;
 
-  c += count_arrs_r(p, num, num_end);
+  c += count_arrs_m(p, num, num_end);
+  return c;
+}
+
+// memoized version of count_arrs_r
+arr_count_t count_arrs_m(str_ptr_t p, num_it_t num, num_it_t num_end) {
+  using mem_ent_t = std::pair<std::string, nums_t>;
+  static std::map<mem_ent_t, arr_count_t> s_mem;
+
+  const mem_ent_t e{p, nums_t{num, num_end}};
+  auto it = s_mem.find(e);
+  if (it != s_mem.end()) {
+    return it->second;
+  }
+
+  const arr_count_t c = count_arrs_r(p, num, num_end);
+  s_mem[e] = c;
   return c;
 }
 
@@ -110,7 +128,7 @@ arr_count_t count_arrs(const utils::line_t& line) {
 
   const nums_t nums = read_nums(nums_str);
 
-  return count_arrs_r(pat.c_str(), nums.cbegin(), nums.cend());
+  return count_arrs_m(pat.c_str(), nums.cbegin(), nums.cend());
 }
 
 }  // namespace
