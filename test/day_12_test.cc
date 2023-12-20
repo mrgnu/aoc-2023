@@ -39,6 +39,15 @@ TEST_CASE("is_valid", "[day 12]") {
   }
 }
 
+TEST_CASE("count_arrs", "[day 12]") {
+  REQUIRE(part_1({"???.### 1,1,3"}) == 1);
+  REQUIRE(part_1({".??..??...?##. 1,1,3"}) == 4);
+  REQUIRE(part_1({"?#?#?#?#?#?#?#? 1,3,1,6"}) == 1);
+  REQUIRE(part_1({"????.#...#... 4,1,1"}) == 1);
+  REQUIRE(part_1({"????.######..#####. 1,6,5"}) == 4);
+  REQUIRE(part_1({"?###???????? 3,2,1"}) == 10);
+}
+
 TEST_CASE("example 1", "[day 12]") {
   const utils::lines_t lines{
       // clang-format off
