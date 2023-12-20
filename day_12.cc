@@ -16,15 +16,6 @@ nums_t read_nums(const utils::line_t& nums_str) {
   return nums;
 }
 
-utils::parts_t trim(const utils::parts_t& parts) {
-  utils::parts_t trimmed;
-  for (const auto& p : parts) {
-    if (p.empty()) continue;
-    trimmed.push_back(p);
-  }
-  return trimmed;
-}
-
 bool is_valid(const utils::line_t& l, const nums_t& nums) {
   // skip until first broken range
   const char* ls = l.c_str();
@@ -64,44 +55,38 @@ arr_count_t count_arrs_m(str_ptr_t p, num_it_t num, num_it_t num_end);
 arr_count_t count_arrs_r(str_ptr_t p, num_it_t num, num_it_t num_end) {
   arr_count_t c = 0;
 
-  {
-    if (num == num_end) {
-      // if no nums are left, match if no broken springs remain
-      while (*p && *p != '#') ++p;
-      return *p ? 0 : 1;
-    }
+  // skip forward to next broken or unknown section
+  while (*p == '.') ++p;
 
-    // skip forward to next broken or unknown section
-    while (*p == '.') ++p;
-
-    // eol with nums remaining - no match
-    if (!*p) {
-      return 0;
-    }
-
-    const num_t this_num = *num;
-    if (can_fit(p, this_num)) {
-      // NOTE: can_fit allows fit on eol as well as non-broken spring
-      str_ptr_t np = p + this_num;
-      if (*np) ++np;
-
-      // start of p fits first remaining num broken springs - continue matching
-      c += count_arrs_m(np, std::next(num), num_end);
-    }
-
-    if (*p == '#') {
-      // actual broken spring - no more tries from here
-      return c;
-    }
+  // if no nums are left, match if no broken springs remain
+  if (num == num_end) {
+    while (*p && *p != '#') ++p;
+    return *p == '#' ? 0 : 1;
   }
 
-  // figure out start of next possible run
+  // eol with nums remaining - no match
+  if (!*p) {
+    return 0;
+  }
+
+  const num_t this_num = *num;
+  // if start of p fits this_num broken springs, continue matching
+  if (can_fit(p, this_num)) {
+    // NOTE: can_fit allows fit on eol as well as non-broken spring
+    str_ptr_t np = p + this_num;
+    // if not eol, account for non-broken spring after range of broken
+    if (*np) ++np;
+
+    c += count_arrs_m(np, std::next(num), num_end);
+  }
+
   if (*p == '#') {
-    // if start was on a broken spring, skip forward until not
-    while (*p == '#') ++p;
+    // actual broken spring - no more tries from here
+    return c;
   }
-  if (*p) ++p;
 
+  // test next position
+  ++p;
   c += count_arrs_m(p, num, num_end);
   return c;
 }
@@ -118,7 +103,7 @@ arr_count_t count_arrs_m(str_ptr_t p, num_it_t num, num_it_t num_end) {
   }
 
   const arr_count_t c = count_arrs_r(p, num, num_end);
-  s_mem[e] = c;
+  s_mem.emplace(std::move(e), c);
   return c;
 }
 
