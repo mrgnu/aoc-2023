@@ -131,6 +131,24 @@ arr_count_t count_arrs(const utils::line_t& line) {
   return count_arrs_m(pat.c_str(), nums.cbegin(), nums.cend());
 }
 
+arr_count_t count_unfoleded_arrs(const utils::line_t& line) {
+  const auto [pat, nums_str] =
+      utils::split_once(line, std::regex("[[:blank:]]+"));
+
+  const nums_t nums = read_nums(nums_str);
+
+  utils::line_t unfolded_pat = pat;
+  nums_t unfolded_nums(nums.cbegin(), nums.cend());
+  for (int i = 0; i < 4; ++i) {
+    unfolded_pat += "?";
+    unfolded_pat += pat;
+    unfolded_nums.insert(unfolded_nums.end(), nums.cbegin(), nums.cend());
+  }
+
+  return count_arrs_r(unfolded_pat.c_str(), unfolded_nums.cbegin(),
+                      unfolded_nums.cend());
+}
+
 }  // namespace
 
 namespace day_12 {
@@ -143,6 +161,14 @@ arr_count_t part_1(const utils::lines_t& lines) {
   arr_count_t acc = 0;
   for (const utils::line_t& line : lines) {
     acc += count_arrs(line);
+  }
+  return acc;
+}
+
+arr_count_t part_2(const utils::lines_t& lines) {
+  arr_count_t acc = 0;
+  for (const utils::line_t& line : lines) {
+    acc += count_unfoleded_arrs(line);
   }
   return acc;
 }
